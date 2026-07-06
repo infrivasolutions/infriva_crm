@@ -11,6 +11,7 @@ export const apiFetch = async (endpoint, options = {}) => {
 
   const res = await fetch(`${API_URL}${endpoint}`, {
     ...options,
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -18,9 +19,14 @@ export const apiFetch = async (endpoint, options = {}) => {
     },
   });
 
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
+    if (res.status === 401 && typeof window !== "undefined") {
+      localStorage.removeItem("infriva_token");
+      localStorage.removeItem("infriva_user");
+    }
+
     throw new Error(data?.message || "Something went wrong");
   }
 
