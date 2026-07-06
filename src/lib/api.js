@@ -1,5 +1,5 @@
 export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
+  process.env.NEXT_PUBLIC_API_URL || "https://api.infrivasolutions.com/api/v1";
 
 export const getToken = () => {
   if (typeof window === "undefined") return null;
