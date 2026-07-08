@@ -32,7 +32,7 @@ const allLinks = [
     name: "Leads",
     href: "/leads",
     icon: Users,
-    roles: ["admin", "ads-manager"],
+    roles: ["admin", "ads-manager", "developer"],
   },
   {
     name: "Clients",
