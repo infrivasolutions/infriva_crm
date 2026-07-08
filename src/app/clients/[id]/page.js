@@ -15,6 +15,7 @@ import {
   MessageCircle,
   Phone,
   RefreshCcw,
+  Save,
   Sparkles,
   User,
   UserCog,
@@ -139,6 +140,16 @@ export default function ClientDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [members, setMembers] = useState([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState("");
+  const [currentUser, setCurrentUser] = useState(null);
+
+  const [form, setForm] = useState({
+    assignedTo: "",
+  });
+
   const fetchClient = async () => {
     try {
       setLoading(true);
@@ -152,6 +163,9 @@ export default function ClientDetailPage() {
       }
 
       setClient(clientData);
+      setForm({
+        assignedTo: clientData?.assignedTo?._id || "",
+      });
     } catch (err) {
       console.error(err);
 
@@ -171,18 +185,89 @@ export default function ClientDetailPage() {
     }
   };
 
+  const fetchMembers = async () => {
+    try {
+      setMembersLoading(true);
+
+      const res = await apiFetch("/users/assignable");
+      const usersData = res?.users || res?.data || [];
+
+      setMembers(
+        usersData.filter((user) =>
+          ["developer", "ads-manager"].includes(user?.role),
+        ),
+      );
+    } catch (err) {
+      console.error(err);
+      setMembers([]);
+    } finally {
+      setMembersLoading(false);
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("infriva_token");
+    const userData = localStorage.getItem("infriva_user");
 
     if (!token) {
       router.replace("/login");
       return;
     }
 
+    const parsedUser = userData ? JSON.parse(userData) : null;
+    setCurrentUser(parsedUser);
+
     if (clientId) {
       fetchClient();
+
+      if (["admin", "ads-manager"].includes(parsedUser?.role)) {
+        fetchMembers();
+      }
     }
-  }, [clientId]);
+  }, [clientId, router]);
+  const canManageClient = ["admin", "ads-manager"].includes(currentUser?.role);
+
+  const updateField = (name, value) => {
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      setError("");
+      setSuccess("");
+
+      const payload = {
+        assignedTo: form.assignedTo || null,
+      };
+
+      const res = await apiFetch(`/clients/${clientId}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
+
+      const updatedClient = res?.client || res?.data;
+
+      if (updatedClient) {
+        setClient(updatedClient);
+        setForm({
+          assignedTo: updatedClient?.assignedTo?._id || "",
+        });
+      } else {
+        await fetchClient();
+      }
+
+      setSuccess("Client assigned successfully");
+    } catch (err) {
+      console.error(err);
+      setError(err?.message || "Failed to update client assignment");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const whatsappLink = useMemo(() => {
     const phone = String(client?.phone || "").replace(/\D/g, "");
@@ -323,6 +408,11 @@ export default function ClientDetailPage() {
             {error}
           </div>
         )}
+        {success && (
+          <div className="rounded-2xl border border-green-100 bg-green-50 px-4 py-3 text-sm font-bold text-green-700">
+            {success}
+          </div>
+        )}
 
         <section className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr] xl:gap-6">
           <div className="space-y-5 sm:space-y-6">
@@ -425,38 +515,101 @@ export default function ClientDetailPage() {
               </div>
             )}
 
-            <div className="theme-card p-4 sm:p-6">
-              <div className="mb-5">
-                <h2 className="text-lg font-black sm:text-xl">
-                  Client Work Overview
-                </h2>
+            {canManageClient && (
+              <div className="theme-card p-4 sm:p-6">
+                <div className="mb-5">
+                  <h2 className="text-lg font-black sm:text-xl">
+                    Client Work Overview
+                  </h2>
 
-                <p className="mt-1 text-xs text-muted sm:text-sm">
-                  Projects and quotations will be connected here.
-                </p>
+                  <p className="mt-1 text-xs text-muted sm:text-sm">
+                    Projects and quotations will be connected here.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  <WorkCard
+                    icon={FolderKanban}
+                    title="Projects"
+                    desc="Create and manage client projects from this CRM."
+                    href={`/projects/new?client=${client?._id}`}
+                    action="Create Project"
+                  />
+
+                  <WorkCard
+                    icon={FileText}
+                    title="Quotations"
+                    desc="Prepare quotations and proposals for this client."
+                    href={`/quotations/new?client=${client?._id}`}
+                    action="Create Quotation"
+                  />
+                </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                <WorkCard
-                  icon={FolderKanban}
-                  title="Projects"
-                  desc="Create and manage client projects from this CRM."
-                  href={`/projects/new?client=${client?._id}`}
-                  action="Create Project"
-                />
-
-                <WorkCard
-                  icon={FileText}
-                  title="Quotations"
-                  desc="Prepare quotations and proposals for this client."
-                  href={`/quotations/new?client=${client?._id}`}
-                  action="Create Quotation"
-                />
-              </div>
-            </div>
+            )}
           </div>
 
           <aside className="space-y-5 sm:space-y-6 xl:sticky xl:top-24 xl:self-start">
+            {canManageClient && (
+              <div className="theme-card p-4 sm:p-6">
+                <div className="mb-5">
+                  <h2 className="text-lg font-black sm:text-xl">
+                    Assign Client
+                  </h2>
+
+                  <p className="mt-1 text-xs text-muted sm:text-sm">
+                    Assign this client to a developer or ads manager.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-2 block text-sm font-black">
+                      Assign To
+                    </label>
+
+                    <select
+                      value={form.assignedTo}
+                      onChange={(e) =>
+                        updateField("assignedTo", e.target.value)
+                      }
+                      className="theme-input"
+                      disabled={membersLoading}
+                    >
+                      <option value="">
+                        {membersLoading ? "Loading members..." : "Unassigned"}
+                      </option>
+
+                      {members.map((member) => (
+                        <option key={member._id} value={member._id}>
+                          {member.name} —{" "}
+                          {member.role === "ads-manager"
+                            ? "Ads Manager"
+                            : "Developer"}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="theme-btn w-full disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 size={18} className="animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save size={18} />
+                        Save Assignment
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="theme-card p-4 sm:p-6">
               <div className="mb-5">
                 <h2 className="text-lg font-black sm:text-xl">Quick Actions</h2>
@@ -467,21 +620,25 @@ export default function ClientDetailPage() {
               </div>
 
               <div className="space-y-3">
-                <Link
-                  href={`/projects/new?client=${client?._id}`}
-                  className="theme-btn w-full"
-                >
-                  <FolderKanban size={18} />
-                  New Project
-                </Link>
+                {canManageClient && (
+                  <>
+                    <Link
+                      href={`/projects/new?client=${client?._id}`}
+                      className="theme-btn w-full"
+                    >
+                      <FolderKanban size={18} />
+                      New Project
+                    </Link>
 
-                <Link
-                  href={`/quotations/new?client=${client?._id}`}
-                  className="theme-btn-outline w-full"
-                >
-                  <FileText size={18} />
-                  New Quotation
-                </Link>
+                    <Link
+                      href={`/quotations/new?client=${client?._id}`}
+                      className="theme-btn-outline w-full"
+                    >
+                      <FileText size={18} />
+                      New Quotation
+                    </Link>
+                  </>
+                )}
 
                 <button
                   onClick={fetchClient}

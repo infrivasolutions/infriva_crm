@@ -207,6 +207,13 @@ function LeadCard({ lead }) {
             </p>
           )}
 
+          {lead?.assignedTo?.name && (
+            <p className="flex min-w-0 items-center gap-1.5 text-[10px] font-bold text-muted sm:gap-2 sm:text-xs">
+              <Users size={13} className="shrink-0 text-primary" />
+              <span className="truncate">Assigned: {lead.assignedTo.name}</span>
+            </p>
+          )}
+
           {lead?.followUpDate && (
             <p className="flex min-w-0 items-center gap-1.5 text-[10px] font-bold text-muted sm:gap-2 sm:text-xs">
               <CalendarClock size={13} className="shrink-0 text-primary" />
@@ -238,6 +245,7 @@ export default function LeadsPage() {
   const [status, setStatus] = useState("All");
   const [source, setSource] = useState("All");
   const [priority, setPriority] = useState("All");
+  const [currentUser, setCurrentUser] = useState(null);
 
   const fetchLeads = async () => {
     try {
@@ -255,8 +263,14 @@ export default function LeadsPage() {
   };
 
   useEffect(() => {
+    const userData = localStorage.getItem("infriva_user");
+    const parsedUser = userData ? JSON.parse(userData) : null;
+
+    setCurrentUser(parsedUser);
     fetchLeads();
   }, []);
+
+  const canManageLeads = ["admin", "ads-manager"].includes(currentUser?.role);
 
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
@@ -311,7 +325,7 @@ export default function LeadsPage() {
   }, [leads, filteredLeads]);
 
   return (
-    <RoleGuard allowedRoles={["admin", "ads-manager"]}>
+    <RoleGuard allowedRoles={["admin", "ads-manager", "developer"]}>
       <DashboardLayout>
         <div className="space-y-5 sm:space-y-6">
           <section className="relative overflow-hidden rounded-4xl bg-primary p-5 text-white shadow-2xl shadow-purple-200 sm:rounded-4xl sm:p-6 lg:p-8">
@@ -333,14 +347,15 @@ export default function LeadsPage() {
                   referrals and manual business leads.
                 </p>
               </div>
-
-              <Link
-                href="/leads/new"
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-primary transition hover:bg-primary-light sm:w-fit sm:rounded-full"
-              >
-                <Plus size={18} />
-                Add Lead
-              </Link>
+              {canManageLeads && (
+                <Link
+                  href="/leads/new"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-primary transition hover:bg-primary-light sm:w-fit sm:rounded-full"
+                >
+                  <Plus size={18} />
+                  Add Lead
+                </Link>
+              )}
             </div>
           </section>
 

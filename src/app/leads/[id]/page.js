@@ -20,6 +20,7 @@ import {
   Send,
   Sparkles,
   User,
+  UserCog,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -187,6 +188,7 @@ export default function LeadDetailPage() {
     status: "New",
     priority: "Warm",
     followUpDate: "",
+    assignedTo: "",
   });
 
   const [note, setNote] = useState("");
@@ -196,6 +198,9 @@ export default function LeadDetailPage() {
   const [converting, setConverting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [members, setMembers] = useState([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
 
   const fetchLead = async () => {
     try {
@@ -216,6 +221,7 @@ export default function LeadDetailPage() {
         status: leadData?.status || "New",
         priority: leadData?.priority || "Warm",
         followUpDate: toDateInputValue(leadData?.followUpDate),
+        assignedTo: leadData?.assignedTo?._id || "",
       });
     } catch (err) {
       console.error(err);
@@ -235,19 +241,47 @@ export default function LeadDetailPage() {
       setLoading(false);
     }
   };
+  const fetchMembers = async () => {
+    try {
+      setMembersLoading(true);
+
+      const res = await apiFetch("/users/assignable");
+      const usersData = res?.users || res?.data || [];
+
+      setMembers(
+        usersData.filter((user) =>
+          ["developer", "ads-manager"].includes(user?.role),
+        ),
+      );
+    } catch (err) {
+      console.error(err);
+      setMembers([]);
+    } finally {
+      setMembersLoading(false);
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("infriva_token");
+    const userData = localStorage.getItem("infriva_user");
 
     if (!token) {
       router.replace("/login");
       return;
     }
 
+    const parsedUser = userData ? JSON.parse(userData) : null;
+    setCurrentUser(parsedUser);
+
     if (leadId) {
       fetchLead();
+
+      if (["admin", "ads-manager"].includes(parsedUser?.role)) {
+        fetchMembers();
+      }
     }
   }, [leadId]);
+  const canManageLead = ["admin", "ads-manager"].includes(currentUser?.role);
 
   const updateField = (name, value) => {
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -263,6 +297,7 @@ export default function LeadDetailPage() {
         status: form.status,
         priority: form.priority,
         followUpDate: form.followUpDate || null,
+        assignedTo: form.assignedTo || null,
       };
 
       const res = await apiFetch(`/leads/${leadId}`, {
@@ -299,7 +334,7 @@ export default function LeadDetailPage() {
         throw new Error("Note is required");
       }
 
-      const res = await apiFetch(`/leads/${leadId}/note`, {
+      const res = await apiFetch(`/leads/${leadId}/notes`, {
         method: "POST",
         body: JSON.stringify({ text: note.trim() }),
       });
@@ -569,6 +604,16 @@ export default function LeadDetailPage() {
                   label="Follow-up"
                   value={formatDate(lead?.followUpDate)}
                 />
+
+                <DetailItem
+                  icon={UserCog}
+                  label="Assigned To"
+                  value={
+                    lead?.assignedTo?.name ||
+                    lead?.assignedTo?.email ||
+                    "Not assigned"
+                  }
+                />
               </div>
 
               {lead?.message && (
@@ -781,23 +826,60 @@ export default function LeadDetailPage() {
                   />
                 </div>
 
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="theme-btn w-full disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 size={18} className="animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save size={18} />
-                      Save Changes
-                    </>
-                  )}
-                </button>
+                {canManageLead && (
+                  <div>
+                    <label className="mb-2 block text-sm font-black">
+                      Assign To
+                    </label>
+
+                    <select
+                      value={form.assignedTo}
+                      onChange={(e) =>
+                        updateField("assignedTo", e.target.value)
+                      }
+                      className="theme-input"
+                      disabled={membersLoading}
+                    >
+                      <option value="">
+                        {membersLoading ? "Loading members..." : "Unassigned"}
+                      </option>
+
+                      {members.map((member) => (
+                        <option key={member._id} value={member._id}>
+                          {member.name} —{" "}
+                          {member.role === "ads-manager"
+                            ? "Ads Manager"
+                            : "Developer"}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {canManageLead ? (
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="theme-btn w-full disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 size={18} className="animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save size={18} />
+                        Save Changes
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <div className="rounded-2xl border border-border bg-surface-alt p-4 text-sm font-bold text-muted">
+                    Developer can add notes only. Lead update and assignment
+                    access is for admin and ads manager.
+                  </div>
+                )}
               </div>
             </div>
 
@@ -811,23 +893,25 @@ export default function LeadDetailPage() {
               </div>
 
               <div className="space-y-3">
-                <button
-                  onClick={handleConvertToClient}
-                  disabled={converting}
-                  className="theme-btn w-full disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {converting ? (
-                    <>
-                      <Loader2 size={18} className="animate-spin" />
-                      Converting...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 size={18} />
-                      Convert To Client
-                    </>
-                  )}
-                </button>
+                {canManageLead && (
+                  <button
+                    onClick={handleConvertToClient}
+                    disabled={converting}
+                    className="theme-btn w-full disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {converting ? (
+                      <>
+                        <Loader2 size={18} className="animate-spin" />
+                        Converting...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 size={18} />
+                        Convert To Client
+                      </>
+                    )}
+                  </button>
+                )}
 
                 <button
                   onClick={fetchLead}

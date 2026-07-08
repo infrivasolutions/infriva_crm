@@ -16,10 +16,11 @@ import {
   Send,
   Sparkles,
   User,
+  UserCog,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const sourceOptions = [
   "Website",
@@ -91,7 +92,12 @@ export default function NewLeadPage() {
     status: "New",
     priority: "Warm",
     followUpDate: "",
+    assignedTo: "",
   });
+
+  const [members, setMembers] = useState([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersError, setMembersError] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -102,6 +108,39 @@ export default function NewLeadPage() {
       [name]: value,
     }));
   };
+
+  const fetchAssignableMembers = async () => {
+    try {
+      setMembersLoading(true);
+      setMembersError("");
+
+      const res = await apiFetch("/users/assignable");
+
+      const users = res?.data || res?.users || [];
+
+      const assignableUsers = users.filter(
+        (user) =>
+          ["developer", "ads-manager"].includes(user?.role) &&
+          user?.isActive !== false,
+      );
+
+      setMembers(assignableUsers);
+    } catch (err) {
+      console.error(err);
+      setMembers([]);
+      setMembersError("Members load nahi ho paaye. Backend route check karo.");
+    } finally {
+      setMembersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAssignableMembers();
+  }, []);
+
+  const selectedMember = useMemo(() => {
+    return members.find((member) => member._id === form.assignedTo);
+  }, [members, form.assignedTo]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -132,6 +171,7 @@ export default function NewLeadPage() {
         budget: form.budget.trim(),
         message: form.message.trim(),
         followUpDate: form.followUpDate || undefined,
+        assignedTo: form.assignedTo || null,
       };
 
       const res = await apiFetch("/leads", {
@@ -316,6 +356,59 @@ export default function NewLeadPage() {
                   ))}
                 </select>
               </Field>
+            </div>
+          </FormSection>
+
+          <FormSection
+            title="Lead Assignment"
+            desc="Assign this lead to a developer or ads manager."
+            icon={UserCog}
+          >
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Assign To" icon={UserCog}>
+                <select
+                  value={form.assignedTo}
+                  onChange={(e) => updateField("assignedTo", e.target.value)}
+                  className="theme-input"
+                  disabled={membersLoading}
+                >
+                  <option value="">
+                    {membersLoading ? "Loading members..." : "Unassigned"}
+                  </option>
+
+                  {members.map((member) => (
+                    <option key={member._id} value={member._id}>
+                      {member.name} —{" "}
+                      {member.role === "ads-manager"
+                        ? "Ads Manager"
+                        : "Developer"}
+                    </option>
+                  ))}
+                </select>
+
+                {membersError && (
+                  <p className="mt-2 text-xs font-bold text-red-600">
+                    {membersError}
+                  </p>
+                )}
+              </Field>
+
+              <div className="rounded-2xl border border-border bg-surface-alt p-4">
+                <p className="text-xs font-black uppercase tracking-wider text-muted">
+                  Selected Member
+                </p>
+
+                <p className="mt-2 text-sm font-bold text-foreground">
+                  {selectedMember
+                    ? `${selectedMember.name} (${selectedMember.role})`
+                    : "No member assigned"}
+                </p>
+
+                <p className="mt-1 text-xs font-semibold leading-5 text-muted">
+                  Admin and ads manager can access all leads. Developer can
+                  access only assigned leads.
+                </p>
+              </div>
             </div>
           </FormSection>
 

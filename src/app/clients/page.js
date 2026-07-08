@@ -193,6 +193,7 @@ export default function ClientsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  const [currentUser, setCurrentUser] = useState(null);
 
   const fetchClients = async () => {
     try {
@@ -210,8 +211,13 @@ export default function ClientsPage() {
   };
 
   useEffect(() => {
+    const userData = localStorage.getItem("infriva_user");
+    const parsedUser = userData ? JSON.parse(userData) : null;
+
+    setCurrentUser(parsedUser);
     fetchClients();
   }, []);
+  const canManageClients = ["admin", "ads-manager"].includes(currentUser?.role);
 
   const filteredClients = useMemo(() => {
     const value = search.toLowerCase();
@@ -260,7 +266,7 @@ export default function ClientsPage() {
   }, [clients, filteredClients]);
 
   return (
-    <RoleGuard allowedRoles={["admin", "ads-manager"]}>
+    <RoleGuard allowedRoles={["admin", "ads-manager", "developer"]}>
       <DashboardLayout>
         <div className="space-y-5 sm:space-y-6">
           <section className="relative overflow-hidden rounded-4xl bg-primary p-5 text-white shadow-2xl shadow-purple-200 sm:p-6 lg:p-8">
@@ -283,13 +289,15 @@ export default function ClientsPage() {
                 </p>
               </div>
 
-              <Link
-                href="/clients/new"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-primary transition hover:bg-primary-light sm:w-fit sm:rounded-full"
-              >
-                <Plus size={18} />
-                Add Client
-              </Link>
+              {canManageClients && (
+                <Link
+                  href="/clients/new"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-primary transition hover:bg-primary-light sm:w-fit sm:rounded-full"
+                >
+                  <Plus size={18} />
+                  Add Client
+                </Link>
+              )}
             </div>
           </section>
 
@@ -361,12 +369,15 @@ export default function ClientsPage() {
                 <h2 className="mt-4 text-xl font-black">No clients found</h2>
 
                 <p className="mt-2 text-sm text-muted">
-                  Converted leads will appear here as clients.
+                  {canManageClients
+                    ? "Converted leads will appear here as clients."
+                    : "No assigned clients found yet."}
                 </p>
-
-                <Link href="/clients/new" className="theme-btn mt-5">
-                  Add Client
-                </Link>
+                {canManageClients && (
+                  <Link href="/clients/new" className="theme-btn mt-5">
+                    Add Client
+                  </Link>
+                )}
               </div>
             </div>
           ) : (
