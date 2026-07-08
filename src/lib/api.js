@@ -6,25 +6,44 @@ export const getToken = () => {
   return localStorage.getItem("infriva_token");
 };
 
+export const clearAuth = () => {
+  if (typeof window === "undefined") return;
+
+  localStorage.removeItem("infriva_token");
+  localStorage.removeItem("infriva_user");
+};
+
 export const apiFetch = async (endpoint, options = {}) => {
   const token = getToken();
+
+  const isFormData = options.body instanceof FormData;
 
   const res = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     credentials: "include",
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers || {}),
     },
   });
 
-  const data = await res.json().catch(() => ({}));
+  const text = await res.text();
+
+  let data = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = { message: text };
+  }
 
   if (!res.ok) {
-    if (res.status === 401 && typeof window !== "undefined") {
-      localStorage.removeItem("infriva_token");
-      localStorage.removeItem("infriva_user");
+    if (
+      res.status === 401 &&
+      typeof window !== "undefined" &&
+      !endpoint.includes("/auth/login")
+    ) {
+      clearAuth();
     }
 
     throw new Error(data?.message || "Something went wrong");

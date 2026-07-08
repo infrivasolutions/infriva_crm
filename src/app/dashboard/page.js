@@ -113,101 +113,204 @@ function AnalyticsBars({ title, data = [] }) {
     </div>
   );
 }
+
 function LeadTable({ leads = [] }) {
   return (
     <div className="theme-card overflow-hidden">
-      {" "}
-      <div className="flex items-center justify-between border-b border-border px-5 py-4">
-        {" "}
+      <div className="flex flex-col gap-3 border-b border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <div>
-          {" "}
-          <h3 className="text-lg font-black">Recent Leads</h3>{" "}
-          <p className="mt-1 text-sm text-muted">
-            {" "}
-            Latest enquiries from website, Meta, WhatsApp and manual
-            entries{" "}
-          </p>{" "}
-        </div>{" "}
+          <h3 className="text-base font-black sm:text-lg">Recent Leads</h3>
+          <p className="mt-1 text-xs leading-5 text-muted sm:text-sm">
+            Latest enquiries from website, Meta, WhatsApp and manual entries
+          </p>
+        </div>
+
         <Link
           href="/leads"
-          className="text-sm font-black text-primary hover:text-primary-dark"
+          className="inline-flex w-fit items-center gap-1 rounded-full bg-primary-light px-4 py-2 text-xs font-black text-primary transition hover:bg-primary hover:text-white sm:text-sm"
         >
-          {" "}
-          View All{" "}
-        </Link>{" "}
-      </div>{" "}
+          View All
+          <ArrowRight size={15} />
+        </Link>
+      </div>
+
       {leads.length === 0 ? (
-        <div className="p-5">
-          {" "}
+        <div className="p-4 sm:p-5">
           <EmptyState
             title="No leads found"
             desc="Add your first lead to start tracking enquiries."
-          />{" "}
+          />
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          {" "}
-          <table className="w-full min-w-190 text-left">
-            {" "}
-            <thead className="bg-surface-alt text-xs uppercase tracking-wider text-muted">
-              {" "}
-              <tr>
-                {" "}
-                <th className="px-5 py-4 font-black">Client</th>{" "}
-                <th className="px-5 py-4 font-black">Service</th>{" "}
-                <th className="px-5 py-4 font-black">Source</th>{" "}
-                <th className="px-5 py-4 font-black">Status</th>{" "}
-                <th className="px-5 py-4 font-black">Created</th>{" "}
-              </tr>{" "}
-            </thead>{" "}
-            <tbody className="divide-y divide-border">
-              {" "}
-              {leads.map((lead) => (
-                <tr key={lead._id} className="transition hover:bg-surface-alt">
-                  {" "}
-                  <td className="px-5 py-4">
-                    {" "}
-                    <p className="font-black text-foreground">
-                      {" "}
-                      {getLeadName(lead)}{" "}
-                    </p>{" "}
-                    <p className="mt-1 text-xs text-muted">
-                      {" "}
-                      {lead?.phone || lead?.email || "No contact"}{" "}
-                    </p>{" "}
-                  </td>{" "}
-                  <td className="px-5 py-4 text-sm font-semibold text-foreground">
-                    {" "}
-                    {getLeadService(lead)}{" "}
-                  </td>{" "}
-                  <td className="px-5 py-4 text-sm text-muted">
-                    {" "}
-                    {getLeadSource(lead)}{" "}
-                  </td>{" "}
-                  <td className="px-5 py-4">
-                    {" "}
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-black ${getStatusClass(lead?.status)}`}
-                    >
-                      {" "}
-                      {lead?.status || "New"}{" "}
-                    </span>{" "}
-                  </td>{" "}
-                  <td className="px-5 py-4 text-sm font-bold text-muted">
-                    {" "}
+        <>
+          {/* Mobile Card View - unchanged */}
+          <div className="grid grid-cols-1 gap-3 p-4 sm:hidden">
+            {leads.map((lead) => (
+              <Link
+                key={lead._id}
+                href={`/leads/${lead._id}`}
+                className="group rounded-3xl border border-border bg-white p-4 shadow-sm transition hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl hover:shadow-purple-100"
+              >
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-light text-primary">
+                      <Users size={20} />
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-black text-foreground">
+                        {getLeadName(lead)}
+                      </p>
+                      <p className="mt-1 truncate text-xs text-muted">
+                        {lead?.phone || lead?.email || "No contact"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <span
+                    className={`shrink-0 rounded-full px-3 py-1 text-[10px] font-black ${getStatusClass(
+                      lead?.status,
+                    )}`}
+                  >
+                    {lead?.status || "New"}
+                  </span>
+                </div>
+
+                <div className="space-y-3 rounded-2xl bg-surface-alt p-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-wider text-muted">
+                      Service
+                    </p>
+                    <p className="mt-1 line-clamp-1 text-xs font-bold text-foreground">
+                      {getLeadService(lead)}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-wider text-muted">
+                        Source
+                      </p>
+                      <p className="mt-1 truncate text-xs font-bold text-foreground">
+                        {getLeadSource(lead)}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-wider text-muted">
+                        Created
+                      </p>
+                      <p className="mt-1 text-xs font-bold text-foreground">
+                        {lead?.createdAt
+                          ? new Date(lead.createdAt).toLocaleDateString("en-IN")
+                          : "—"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between text-xs font-black text-primary">
+                  <span>Open Lead</span>
+                  <ArrowRight
+                    size={16}
+                    className="transition group-hover:translate-x-1"
+                  />
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* Desktop / Tablet Card View */}
+          <div className="hidden grid-cols-2 gap-4 p-5 sm:grid">
+            {leads.map((lead) => (
+              <Link
+                key={lead._id}
+                href={`/leads/${lead._id}`}
+                className="group relative overflow-hidden rounded-3xl border border-border bg-white p-4 shadow-sm transition hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl hover:shadow-purple-100"
+              >
+                <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-primary/10 blur-2xl" />
+
+                <div className="relative flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-light text-primary shadow-lg shadow-purple-100">
+                      <Users size={21} />
+                    </div>
+
+                    <div className="min-w-0">
+                      <h4 className="truncate text-base font-black text-foreground">
+                        {getLeadName(lead)}
+                      </h4>
+
+                      <p className="mt-1 truncate text-xs font-bold text-muted">
+                        {lead?.phone || lead?.email || "No contact"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <span
+                    className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-black ${getStatusClass(
+                      lead?.status,
+                    )}`}
+                  >
+                    {lead?.status || "New"}
+                  </span>
+                </div>
+
+                <div className="relative mt-4 rounded-2xl bg-surface-alt p-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-muted">
+                        Service
+                      </p>
+
+                      <p className="mt-1 truncate text-sm font-black text-foreground">
+                        {getLeadService(lead)}
+                      </p>
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-muted">
+                        Source
+                      </p>
+
+                      <p className="mt-1 truncate text-sm font-black text-primary">
+                        {getLeadSource(lead)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="relative mt-4 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary-light px-3 py-1 text-[11px] font-black text-primary">
+                    <PhoneCall size={13} />
+                    {lead?.phone || "No phone"}
+                  </span>
+
+                  <span className="inline-flex items-center gap-1 rounded-full bg-surface-alt px-3 py-1 text-[11px] font-black text-foreground">
+                    <CalendarClock size={13} />
                     {lead?.createdAt
                       ? new Date(lead.createdAt).toLocaleDateString("en-IN")
-                      : "—"}{" "}
-                  </td>{" "}
-                </tr>
-              ))}{" "}
-            </tbody>{" "}
-          </table>{" "}
-        </div>
-      )}{" "}
+                      : "—"}
+                  </span>
+                </div>
+
+                <div className="relative mt-4 flex items-center justify-between border-t border-border pt-3 text-xs font-black text-primary">
+                  <span>View Details</span>
+
+                  <ArrowRight
+                    size={16}
+                    className="transition group-hover:translate-x-1"
+                  />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
+
 function UpcomingTasks({ tasks = [] }) {
   return (
     <div className="theme-card p-5">
@@ -477,18 +580,18 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8">
-        <section className="relative overflow-hidden rounded-4xl bg-primary px-6 py-8 text-white shadow-2xl shadow-purple-200 sm:px-8 lg:px-10">
+      <div className="space-y-5 sm:space-y-8">
+        <section className="relative overflow-hidden rounded-4xl bg-primary px-5 py-7 text-white shadow-2xl shadow-purple-200 sm:rounded-4xl sm:px-8 sm:py-8 lg:px-10">
           <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
           <div className="absolute -bottom-20 left-1/2 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
 
           <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-sm font-bold uppercase tracking-[0.25em] text-white/70">
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-white/70 sm:text-sm sm:tracking-[0.25em]">
                 Infriva CRM
               </p>
 
-              <h2 className="mt-3 max-w-2xl text-3xl font-black leading-tight sm:text-4xl">
+              <h2 className="mt-3 max-w-2xl text-2xl font-black leading-tight sm:text-4xl">
                 {isAdminView
                   ? "Manage leads, clients, quotations, projects and team work."
                   : "Track your assigned projects, tasks and deadlines."}
@@ -501,11 +604,11 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap">
               {isAdminView && (
                 <Link
                   href="/leads/new"
-                  className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-black text-primary transition hover:bg-primary-light"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-primary transition hover:bg-primary-light sm:rounded-full"
                 >
                   Add New Lead
                   <ArrowRight size={18} />
@@ -514,7 +617,7 @@ export default function DashboardPage() {
 
               <Link
                 href={isAdminView ? "/quotations/new" : "/tasks"}
-                className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-3 text-sm font-black text-white backdrop-blur transition hover:bg-white/20"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-black text-white backdrop-blur transition hover:bg-white/20 sm:rounded-full"
               >
                 {isAdminView ? "Create Quotation" : "View Tasks"}
               </Link>
@@ -522,7 +625,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
+        <section className="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-5">
           {cards.map((item) => (
             <StatCard key={item.title} {...item} />
           ))}
@@ -530,7 +633,7 @@ export default function DashboardPage() {
 
         {isAdminView ? (
           <>
-            <section className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
+            <section className="grid gap-5 lg:gap-6 xl:grid-cols-[1.5fr_1fr]">
               <LeadTable leads={dashboard?.recentLeads || []} />
               <UpcomingTasks tasks={dashboard?.upcomingTasks || []} />
             </section>

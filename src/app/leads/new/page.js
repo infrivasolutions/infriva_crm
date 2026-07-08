@@ -2,7 +2,21 @@
 
 import DashboardLayout from "@/components/crm/DashboardLayout";
 import { apiFetch } from "@/lib/api";
-import { ArrowLeft, Loader2, Save } from "lucide-react";
+import {
+  ArrowLeft,
+  Building2,
+  CalendarClock,
+  FileText,
+  IndianRupee,
+  Loader2,
+  Mail,
+  MessageSquare,
+  Phone,
+  Save,
+  Send,
+  Sparkles,
+  User,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -26,6 +40,41 @@ const statusOptions = [
 ];
 
 const priorityOptions = ["Hot", "Warm", "Cold"];
+
+function FormSection({ title, desc, icon: Icon, children }) {
+  return (
+    <section className="rounded-[1.7rem] border border-border bg-white p-4 shadow-sm sm:rounded-4xl sm:p-6">
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-black text-foreground sm:text-xl">
+            {title}
+          </h2>
+          <p className="mt-1 text-xs leading-5 text-muted sm:text-sm">{desc}</p>
+        </div>
+
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-light text-primary">
+          <Icon size={22} />
+        </div>
+      </div>
+
+      {children}
+    </section>
+  );
+}
+
+function Field({ label, required, icon: Icon, children, className = "" }) {
+  return (
+    <div className={className}>
+      <label className="mb-2 flex items-center gap-2 text-sm font-black text-foreground">
+        {Icon && <Icon size={15} className="text-primary" />}
+        {label}
+        {required && <span className="text-red-500">*</span>}
+      </label>
+
+      {children}
+    </div>
+  );
+}
 
 export default function NewLeadPage() {
   const router = useRouter();
@@ -75,6 +124,13 @@ export default function NewLeadPage() {
 
       const payload = {
         ...form,
+        clientName: form.clientName.trim(),
+        phone: form.phone.trim(),
+        email: form.email.trim(),
+        company: form.company.trim(),
+        service: form.service.trim(),
+        budget: form.budget.trim(),
+        message: form.message.trim(),
         followUpDate: form.followUpDate || undefined,
       };
 
@@ -100,185 +156,207 @@ export default function NewLeadPage() {
 
   return (
     <DashboardLayout>
-      <div className="mx-auto max-w-5xl space-y-6">
-        <section className="flex flex-col justify-between gap-4 rounded-[2rem] bg-primary p-6 text-white shadow-2xl shadow-purple-200 lg:flex-row lg:items-center">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-[0.25em] text-white/70">
-              New Lead
-            </p>
-            <h1 className="mt-2 text-3xl font-black">Add CRM Lead</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/75">
-              Add manual leads from calls, WhatsApp, referrals, website enquiry
-              or Meta Ads.
-            </p>
-          </div>
+      <div className="mx-auto w-full max-w-6xl space-y-5 sm:space-y-6">
+        <section className="relative overflow-hidden rounded-4xl bg-primary p-5 text-white shadow-2xl shadow-purple-200 sm:p-6 lg:p-8">
+          <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+          <div className="absolute -bottom-20 left-1/2 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
 
-          <Link
-            href="/leads"
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-3 text-sm font-black text-white backdrop-blur transition hover:bg-white/20"
-          >
-            <ArrowLeft size={18} />
-            Back to Leads
-          </Link>
+          <div className="relative z-10 flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-white/70 sm:text-sm sm:tracking-[0.25em]">
+                New Lead
+              </p>
+
+              <h1 className="mt-2 text-2xl font-black leading-tight sm:text-3xl lg:text-4xl">
+                Add CRM Lead
+              </h1>
+
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-white/75 sm:text-base">
+                Add manual leads from calls, WhatsApp, referrals, website
+                enquiry or Meta Ads.
+              </p>
+            </div>
+
+            <Link
+              href="/leads"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-black text-white backdrop-blur transition hover:bg-white/20 sm:w-fit sm:rounded-full"
+            >
+              <ArrowLeft size={18} />
+              Back to Leads
+            </Link>
+          </div>
         </section>
 
-        <form onSubmit={handleSubmit} className="theme-card p-5 sm:p-6">
+        <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
           {error && (
-            <div className="mb-5 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+            <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
               {error}
             </div>
           )}
 
-          <div className="grid gap-5 md:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-sm font-black">
-                Client Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                value={form.clientName}
-                onChange={(e) => updateField("clientName", e.target.value)}
-                className="theme-input"
-                placeholder="Enter client name"
-              />
-            </div>
+          <FormSection
+            title="Client Details"
+            desc="Basic contact information of the lead."
+            icon={User}
+          >
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Client Name" required icon={User}>
+                <input
+                  value={form.clientName}
+                  onChange={(e) => updateField("clientName", e.target.value)}
+                  className="theme-input"
+                  placeholder="Enter client name"
+                />
+              </Field>
 
-            <div>
-              <label className="mb-2 block text-sm font-black">
-                Phone <span className="text-red-500">*</span>
-              </label>
-              <input
-                value={form.phone}
-                onChange={(e) => updateField("phone", e.target.value)}
-                className="theme-input"
-                placeholder="Enter phone number"
-              />
-            </div>
+              <Field label="Phone" required icon={Phone}>
+                <input
+                  type="tel"
+                  value={form.phone}
+                  onChange={(e) => updateField("phone", e.target.value)}
+                  className="theme-input"
+                  placeholder="Enter phone number"
+                />
+              </Field>
 
-            <div>
-              <label className="mb-2 block text-sm font-black">Email</label>
-              <input
-                value={form.email}
-                onChange={(e) => updateField("email", e.target.value)}
-                className="theme-input"
-                placeholder="Enter email address"
-              />
-            </div>
+              <Field label="Email" icon={Mail}>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => updateField("email", e.target.value)}
+                  className="theme-input"
+                  placeholder="Enter email address"
+                />
+              </Field>
 
-            <div>
-              <label className="mb-2 block text-sm font-black">Company</label>
-              <input
-                value={form.company}
-                onChange={(e) => updateField("company", e.target.value)}
-                className="theme-input"
-                placeholder="Enter company name"
-              />
+              <Field label="Company" icon={Building2}>
+                <input
+                  value={form.company}
+                  onChange={(e) => updateField("company", e.target.value)}
+                  className="theme-input"
+                  placeholder="Enter company name"
+                />
+              </Field>
             </div>
+          </FormSection>
 
-            <div>
-              <label className="mb-2 block text-sm font-black">
-                Service <span className="text-red-500">*</span>
-              </label>
-              <input
-                value={form.service}
-                onChange={(e) => updateField("service", e.target.value)}
-                className="theme-input"
-                placeholder="Website, CRM, SEO, WhatsApp API..."
-              />
+          <FormSection
+            title="Lead Requirement"
+            desc="Service, budget and source information."
+            icon={Sparkles}
+          >
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Service" required icon={Sparkles}>
+                <input
+                  value={form.service}
+                  onChange={(e) => updateField("service", e.target.value)}
+                  className="theme-input"
+                  placeholder="Website, CRM, SEO, WhatsApp API..."
+                />
+              </Field>
+
+              <Field label="Budget" icon={IndianRupee}>
+                <input
+                  value={form.budget}
+                  onChange={(e) => updateField("budget", e.target.value)}
+                  className="theme-input"
+                  placeholder="₹25,000 - ₹50,000"
+                />
+              </Field>
+
+              <Field label="Source" icon={Send}>
+                <select
+                  value={form.source}
+                  onChange={(e) => updateField("source", e.target.value)}
+                  className="theme-input"
+                >
+                  {sourceOptions.map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="Follow-up Date" icon={CalendarClock}>
+                <input
+                  type="date"
+                  value={form.followUpDate}
+                  onChange={(e) => updateField("followUpDate", e.target.value)}
+                  className="theme-input"
+                />
+              </Field>
             </div>
+          </FormSection>
 
-            <div>
-              <label className="mb-2 block text-sm font-black">Budget</label>
-              <input
-                value={form.budget}
-                onChange={(e) => updateField("budget", e.target.value)}
-                className="theme-input"
-                placeholder="₹25,000 - ₹50,000"
-              />
+          <FormSection
+            title="Lead Status"
+            desc="Set current stage and priority for follow-up."
+            icon={FileText}
+          >
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Status" icon={FileText}>
+                <select
+                  value={form.status}
+                  onChange={(e) => updateField("status", e.target.value)}
+                  className="theme-input"
+                >
+                  {statusOptions.map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="Priority" icon={Sparkles}>
+                <select
+                  value={form.priority}
+                  onChange={(e) => updateField("priority", e.target.value)}
+                  className="theme-input"
+                >
+                  {priorityOptions.map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
+                </select>
+              </Field>
             </div>
+          </FormSection>
 
-            <div>
-              <label className="mb-2 block text-sm font-black">Source</label>
-              <select
-                value={form.source}
-                onChange={(e) => updateField("source", e.target.value)}
-                className="theme-input"
-              >
-                {sourceOptions.map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-black">Status</label>
-              <select
-                value={form.status}
-                onChange={(e) => updateField("status", e.target.value)}
-                className="theme-input"
-              >
-                {statusOptions.map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-black">Priority</label>
-              <select
-                value={form.priority}
-                onChange={(e) => updateField("priority", e.target.value)}
-                className="theme-input"
-              >
-                {priorityOptions.map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-black">
-                Follow-up Date
-              </label>
-              <input
-                type="date"
-                value={form.followUpDate}
-                onChange={(e) => updateField("followUpDate", e.target.value)}
-                className="theme-input"
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="mb-2 block text-sm font-black">Message</label>
+          <FormSection
+            title="Requirement Notes"
+            desc="Add extra details shared by the client."
+            icon={MessageSquare}
+          >
+            <Field label="Message" icon={MessageSquare}>
               <textarea
                 value={form.message}
                 onChange={(e) => updateField("message", e.target.value)}
-                className="theme-input min-h-32 resize-none"
+                className="theme-input min-h-36 resize-none"
                 placeholder="Client requirement, notes, business details..."
               />
+            </Field>
+          </FormSection>
+
+          <div className="sticky bottom-3 z-20 rounded-3xl border border-border bg-white/90 p-3 shadow-2xl shadow-purple-100 backdrop-blur-xl sm:static sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <Link href="/leads" className="theme-btn-outline w-full sm:w-fit">
+                Cancel
+              </Link>
+
+              <button
+                disabled={loading}
+                className="theme-btn w-full disabled:cursor-not-allowed disabled:opacity-60 sm:w-fit"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save size={18} />
+                    Save Lead
+                  </>
+                )}
+              </button>
             </div>
-          </div>
-
-          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <Link href="/leads" className="theme-btn-outline">
-              Cancel
-            </Link>
-
-            <button
-              disabled={loading}
-              className="theme-btn disabled:opacity-60"
-            >
-              {loading ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save size={18} />
-                  Save Lead
-                </>
-              )}
-            </button>
           </div>
         </form>
       </div>

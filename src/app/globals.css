@@ -142,9 +142,20 @@ button {
   background: #ffffff;
   color: var(--foreground);
   border-radius: 0.9rem;
-  padding: 0.85rem 1rem;
+
+  /* Updated padding for icons */
+  padding: 0.9rem 3.25rem;
+
+  min-height: 3.6rem;
   outline: none;
   transition: 0.2s ease;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.theme-input::placeholder {
+  color: var(--muted-foreground);
+  opacity: 0.8;
 }
 
 .theme-input:focus {

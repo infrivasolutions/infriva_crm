@@ -10,9 +10,25 @@ import {
   Mail,
   ShieldCheck,
   Sparkles,
+  Users,
+  FolderKanban,
+  ListTodo,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+
+function FeatureCard({ title, desc, icon: Icon }) {
+  return (
+    <div className="rounded-3xl border border-border bg-white/75 p-5 shadow-sm backdrop-blur transition hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-100">
+      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-light text-primary">
+        <Icon size={21} />
+      </div>
+
+      <p className="mt-4 text-xl font-black text-primary">{title}</p>
+      <p className="mt-2 text-sm leading-6 text-muted">{desc}</p>
+    </div>
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -92,12 +108,14 @@ export default function LoginPage() {
 
   if (checking) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="theme-card p-8 text-center">
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="theme-card w-full max-w-sm p-8 text-center">
           <Loader2 className="mx-auto animate-spin text-primary" size={34} />
+
           <p className="mt-4 text-lg font-black text-foreground">
             Checking session...
           </p>
+
           <p className="mt-2 text-sm text-muted">Please wait</p>
         </div>
       </div>
@@ -106,12 +124,13 @@ export default function LoginPage() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-background">
-      <div className="absolute left-[-120px] top-[-120px] h-[340px] w-[340px] rounded-full bg-primary/20 blur-3xl" />
-      <div className="absolute bottom-[-140px] right-[-120px] h-[380px] w-[380px] rounded-full bg-primary/15 blur-3xl" />
+      <div className="absolute -left-35 -top-35 h-80 w-[320px] rounded-full bg-primary/20 blur-3xl sm:h-105 sm:w-105" />
+      <div className="absolute -bottom-40 -right-35 h-90 w-90 rounded-full bg-primary/15 blur-3xl sm:h-115 sm:w-115" />
+      <div className="absolute left-1/2 top-1/2 hidden h-80 w-[320px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-100/50 blur-3xl lg:block" />
 
-      <div className="relative z-10 grid min-h-screen lg:grid-cols-[1.05fr_0.95fr]">
+      <div className="relative z-10 grid min-h-screen lg:grid-cols-[1.08fr_0.92fr]">
         {/* Left Branding */}
-        <section className="hidden flex-col justify-between border-r border-border bg-white/45 p-10 backdrop-blur-xl lg:flex">
+        <section className="hidden flex-col justify-between border-r border-border bg-white/45 p-8 backdrop-blur-xl lg:flex xl:p-10">
           <div>
             <div className="flex items-center gap-3">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-white shadow-xl shadow-purple-200">
@@ -124,12 +143,12 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="mt-24 max-w-xl">
+            <div className="mt-20 max-w-xl xl:mt-24">
               <p className="text-sm font-black uppercase tracking-[0.32em] text-primary">
                 CRM Dashboard
               </p>
 
-              <h2 className="mt-5 text-5xl font-black leading-tight text-foreground">
+              <h2 className="mt-5 text-4xl font-black leading-tight text-foreground xl:text-5xl">
                 Manage leads, projects and team work in one smart panel.
               </h2>
 
@@ -142,28 +161,24 @@ export default function LoginPage() {
           </div>
 
           <div className="grid grid-cols-3 gap-4">
-            <div className="theme-card-soft p-5">
-              <p className="text-2xl font-black text-primary">Leads</p>
-              <p className="mt-2 text-sm text-muted">Manage enquiries</p>
-            </div>
+            <FeatureCard title="Leads" desc="Manage enquiries" icon={Users} />
 
-            <div className="theme-card-soft p-5">
-              <p className="text-2xl font-black text-primary">Tasks</p>
-              <p className="mt-2 text-sm text-muted">Assign team work</p>
-            </div>
+            <FeatureCard
+              title="Tasks"
+              desc="Assign team work"
+              icon={ListTodo}
+            />
 
-            <div className="theme-card-soft p-5">
-              <p className="text-2xl font-black text-primary">CRM</p>
-              <p className="mt-2 text-sm text-muted">One dashboard</p>
-            </div>
+            <FeatureCard title="CRM" desc="One dashboard" icon={FolderKanban} />
           </div>
         </section>
 
         {/* Login Form */}
-        <section className="flex items-center justify-center px-4 py-10 sm:px-6 lg:px-10">
+        <section className="flex min-h-screen items-center justify-center px-4 py-8 sm:px-6 lg:px-10">
           <div className="w-full max-w-md">
-            <div className="mb-8 flex justify-center lg:hidden">
-              <div className="flex items-center gap-3">
+            {/* Mobile Logo */}
+            <div className="mb-7 flex justify-center lg:hidden">
+              <div className="flex items-center gap-3 rounded-3xl border border-border bg-white/80 px-5 py-4 shadow-xl shadow-purple-100 backdrop-blur">
                 <div className="flex h-13 w-13 items-center justify-center rounded-2xl bg-primary text-white shadow-xl shadow-purple-200">
                   <Sparkles size={24} />
                 </div>
@@ -179,13 +194,13 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="theme-card p-6 shadow-2xl sm:p-8">
+            <div className="theme-card overflow-hidden p-5 shadow-2xl shadow-purple-100 sm:p-8">
               <div className="mb-7 text-center">
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-primary-light text-primary">
                   <ShieldCheck size={30} />
                 </div>
 
-                <h2 className="mt-5 text-3xl font-black text-foreground">
+                <h2 className="mt-5 text-2xl font-black text-foreground sm:text-3xl">
                   Welcome Back
                 </h2>
 
@@ -216,7 +231,7 @@ export default function LoginPage() {
                       type="email"
                       value={form.email}
                       onChange={(e) => updateField("email", e.target.value)}
-                      className="theme-input pl-11"
+                      className="theme-input"
                       placeholder="admin@infriva.com"
                       autoComplete="email"
                     />
@@ -238,7 +253,7 @@ export default function LoginPage() {
                       type={showPassword ? "text" : "password"}
                       value={form.password}
                       onChange={(e) => updateField("password", e.target.value)}
-                      className="theme-input pl-11 pr-12"
+                      className="theme-input pr-12"
                       placeholder="Enter password"
                       autoComplete="current-password"
                     />
@@ -247,6 +262,9 @@ export default function LoginPage() {
                       type="button"
                       onClick={() => setShowPassword((prev) => !prev)}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-muted transition hover:text-primary"
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -278,6 +296,10 @@ export default function LoginPage() {
                 </p>
               </div>
             </div>
+
+            <p className="mt-5 text-center text-xs font-semibold text-muted">
+              © {new Date().getFullYear()} Infriva Solutions. CRM Access Only.
+            </p>
           </div>
         </section>
       </div>

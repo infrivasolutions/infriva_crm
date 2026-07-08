@@ -1,4 +1,5 @@
 "use client";
+
 import DashboardLayout from "@/components/crm/DashboardLayout";
 import { apiFetch } from "@/lib/api";
 import {
@@ -23,6 +24,7 @@ import {
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+
 const statusOptions = [
   "New",
   "Contacted",
@@ -31,32 +33,73 @@ const statusOptions = [
   "Won",
   "Lost",
 ];
+
 const priorityOptions = ["Hot", "Warm", "Cold"];
+
+const getLeadName = (lead) =>
+  lead?.clientName || lead?.name || lead?.fullName || "Unnamed Lead";
+
+const getLeadCompany = (lead) =>
+  lead?.company || lead?.companyName || lead?.businessName || "";
+
+const getLeadService = (lead) =>
+  lead?.service ||
+  lead?.serviceInterested ||
+  lead?.serviceRequired ||
+  lead?.requirement ||
+  "No service added";
+
+const getLeadSource = (lead) =>
+  lead?.source || lead?.leadSource || lead?.lead_source || "Unknown source";
+
 const getStatusClass = (status = "") => {
-  if (status === "Won") return "bg-green-50 text-green-700";
-  if (status === "Lost") return "bg-red-50 text-red-700";
-  if (status === "Proposal Sent") return "bg-amber-50 text-amber-700";
-  if (status === "Contacted" || status === "Qualified") {
+  const value = status.toLowerCase();
+
+  if (value.includes("won") || value.includes("converted")) {
+    return "bg-green-50 text-green-700";
+  }
+
+  if (value.includes("lost")) {
+    return "bg-red-50 text-red-700";
+  }
+
+  if (value.includes("proposal")) {
+    return "bg-amber-50 text-amber-700";
+  }
+
+  if (value.includes("contacted") || value.includes("qualified")) {
     return "bg-blue-50 text-blue-700";
   }
+
   return "bg-primary-light text-primary";
 };
+
 const getPriorityClass = (priority = "") => {
   if (priority === "Hot") return "bg-red-50 text-red-700";
   if (priority === "Cold") return "bg-blue-50 text-blue-700";
   return "bg-amber-50 text-amber-700";
 };
+
 const formatDate = (date) => {
   if (!date) return "—";
-  return new Date(date).toLocaleDateString("en-IN", {
+
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return "—";
+
+  return d.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
 };
+
 const formatDateTime = (date) => {
   if (!date) return "—";
-  return new Date(date).toLocaleString("en-IN", {
+
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return "—";
+
+  return d.toLocaleString("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -64,47 +107,88 @@ const formatDateTime = (date) => {
     minute: "2-digit",
   });
 };
+
 const toDateInputValue = (date) => {
   if (!date) return "";
+
   const d = new Date(date);
   if (Number.isNaN(d.getTime())) return "";
+
   return d.toISOString().split("T")[0];
 };
+
 function DetailItem({ icon: Icon, label, value }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface-alt p-4">
-      {" "}
-      <div className="flex items-start gap-3">
-        {" "}
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-primary">
-          {" "}
-          <Icon size={18} />{" "}
-        </div>{" "}
+    <div className="rounded-3xl border border-border bg-surface-alt p-3 transition hover:bg-white hover:shadow-lg hover:shadow-purple-100 sm:p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-primary shadow-sm">
+          <Icon size={18} />
+        </div>
+
         <div className="min-w-0">
-          {" "}
-          <p className="text-xs font-black uppercase tracking-wider text-muted">
-            {" "}
-            {label}{" "}
-          </p>{" "}
-          <p className="mt-1 break-words text-sm font-bold text-foreground">
-            {" "}
-            {value || "—"}{" "}
-          </p>{" "}
-        </div>{" "}
-      </div>{" "}
+          <p className="text-[10px] font-black uppercase tracking-wider text-muted sm:text-xs">
+            {label}
+          </p>
+
+          <p className="mt-1 wrap-break-word text-xs font-black text-foreground sm:text-sm">
+            {value || "—"}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
+
+function ActionButton({
+  href,
+  onClick,
+  icon: Icon,
+  children,
+  variant = "white",
+}) {
+  const classes =
+    variant === "white"
+      ? "bg-white text-primary hover:bg-primary-light"
+      : "border border-white/25 bg-white/10 text-white backdrop-blur hover:bg-white/20";
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        target={href.startsWith("http") ? "_blank" : undefined}
+        rel={href.startsWith("http") ? "noreferrer" : undefined}
+        className={`inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-xs font-black transition sm:rounded-full sm:px-5 sm:text-sm ${classes}`}
+      >
+        <Icon size={17} />
+        {children}
+      </a>
+    );
+  }
+
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-xs font-black transition sm:rounded-full sm:px-5 sm:text-sm ${classes}`}
+    >
+      <Icon size={17} />
+      {children}
+    </button>
+  );
+}
+
 export default function LeadDetailPage() {
   const params = useParams();
   const router = useRouter();
   const leadId = params?.id;
+
   const [lead, setLead] = useState(null);
+
   const [form, setForm] = useState({
     status: "New",
     priority: "Warm",
     followUpDate: "",
   });
+
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -112,17 +196,22 @@ export default function LeadDetailPage() {
   const [converting, setConverting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
   const fetchLead = async () => {
     try {
       setLoading(true);
       setError("");
       setSuccess("");
+
       const res = await apiFetch(`/leads/${leadId}`);
       const leadData = res?.lead || res?.data;
+
       if (!leadData) {
         throw new Error("Lead not found");
       }
+
       setLead(leadData);
+
       setForm({
         status: leadData?.status || "New",
         priority: leadData?.priority || "Warm",
@@ -130,6 +219,7 @@ export default function LeadDetailPage() {
       });
     } catch (err) {
       console.error(err);
+
       if (
         err?.message?.toLowerCase().includes("token") ||
         err?.message?.toLowerCase().includes("authorized")
@@ -139,44 +229,55 @@ export default function LeadDetailPage() {
         router.replace("/login");
         return;
       }
+
       setError(err?.message || "Failed to load lead");
     } finally {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     const token = localStorage.getItem("infriva_token");
+
     if (!token) {
       router.replace("/login");
       return;
     }
+
     if (leadId) {
       fetchLead();
     }
   }, [leadId]);
+
   const updateField = (name, value) => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
+
   const handleSave = async () => {
     try {
       setSaving(true);
       setError("");
       setSuccess("");
+
       const payload = {
         status: form.status,
         priority: form.priority,
         followUpDate: form.followUpDate || null,
       };
+
       const res = await apiFetch(`/leads/${leadId}`, {
         method: "PUT",
         body: JSON.stringify(payload),
       });
+
       const updatedLead = res?.lead || res?.data;
+
       if (updatedLead) {
         setLead(updatedLead);
       } else {
         await fetchLead();
       }
+
       setSuccess("Lead updated successfully");
     } catch (err) {
       console.error(err);
@@ -185,25 +286,32 @@ export default function LeadDetailPage() {
       setSaving(false);
     }
   };
+
   const handleAddNote = async (e) => {
     e.preventDefault();
+
     try {
       setNoteSaving(true);
       setError("");
       setSuccess("");
+
       if (!note.trim()) {
         throw new Error("Note is required");
       }
+
       const res = await apiFetch(`/leads/${leadId}/note`, {
         method: "POST",
         body: JSON.stringify({ text: note.trim() }),
       });
+
       const updatedLead = res?.lead || res?.data;
+
       if (updatedLead) {
         setLead(updatedLead);
       } else {
         await fetchLead();
       }
+
       setNote("");
       setSuccess("Note added successfully");
     } catch (err) {
@@ -213,6 +321,7 @@ export default function LeadDetailPage() {
       setNoteSaving(false);
     }
   };
+
   const handleConvertToClient = async () => {
     try {
       const confirmConvert = window.confirm(
@@ -244,424 +353,424 @@ export default function LeadDetailPage() {
       setConverting(false);
     }
   };
+
   const whatsappLink = useMemo(() => {
     const phone = String(lead?.phone || "").replace(/\D/g, "");
+
     if (!phone) return "#";
+
     const message = encodeURIComponent(
-      `Hello ${lead?.clientName || ""}, this is Infriva Solutions. We received your enquiry for ${lead?.service || "our service"}.`,
+      `Hello ${getLeadName(
+        lead,
+      )}, this is Infriva Solutions. We received your enquiry for ${getLeadService(
+        lead,
+      )}.`,
     );
+
     return `https://wa.me/91${phone.slice(-10)}?text=${message}`;
   }, [lead]);
+
   if (loading) {
     return (
       <DashboardLayout>
-        {" "}
         <div className="flex min-h-[70vh] items-center justify-center">
-          {" "}
           <div className="theme-card flex flex-col items-center p-8 text-center">
-            {" "}
-            <Loader2 className="animate-spin text-primary" size={36} />{" "}
-            <h2 className="mt-4 text-xl font-black">Loading Lead</h2>{" "}
+            <Loader2 className="animate-spin text-primary" size={36} />
+
+            <h2 className="mt-4 text-xl font-black">Loading Lead</h2>
+
             <p className="mt-2 text-sm text-muted">
-              {" "}
-              Fetching complete lead details...{" "}
-            </p>{" "}
-          </div>{" "}
-        </div>{" "}
+              Fetching complete lead details...
+            </p>
+          </div>
+        </div>
       </DashboardLayout>
     );
   }
+
   if (error && !lead) {
     return (
       <DashboardLayout>
-        {" "}
         <div className="flex min-h-[70vh] items-center justify-center">
-          {" "}
           <div className="theme-card max-w-md p-8 text-center">
-            {" "}
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-600">
-              {" "}
-              <AlertCircle size={26} />{" "}
-            </div>{" "}
-            <h2 className="mt-4 text-xl font-black">Lead Error</h2>{" "}
-            <p className="mt-2 text-sm leading-6 text-muted">{error}</p>{" "}
+              <AlertCircle size={26} />
+            </div>
+
+            <h2 className="mt-4 text-xl font-black">Lead Error</h2>
+
+            <p className="mt-2 text-sm leading-6 text-muted">{error}</p>
+
             <div className="mt-5 flex justify-center gap-3">
-              {" "}
               <Link href="/leads" className="theme-btn-outline">
-                {" "}
-                Back{" "}
-              </Link>{" "}
+                Back
+              </Link>
+
               <button onClick={fetchLead} className="theme-btn">
-                {" "}
-                Try Again{" "}
-              </button>{" "}
-            </div>{" "}
-          </div>{" "}
-        </div>{" "}
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
       </DashboardLayout>
     );
   }
+
   return (
     <DashboardLayout>
-      {" "}
-      <div className="space-y-6">
-        {" "}
-        <section className="relative overflow-hidden rounded-[2rem] bg-primary p-6 text-white shadow-2xl shadow-purple-200">
-          {" "}
-          <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />{" "}
-          <div className="absolute -bottom-20 left-1/2 h-56 w-56 rounded-full bg-white/10 blur-2xl" />{" "}
+      <div className="space-y-5 sm:space-y-6">
+        <section className="relative overflow-hidden rounded-4xl bg-primary p-5 text-white shadow-2xl shadow-purple-200 sm:p-6 lg:p-8">
+          <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+          <div className="absolute -bottom-20 left-1/2 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+
           <div className="relative z-10 flex flex-col justify-between gap-6 xl:flex-row xl:items-center">
-            {" "}
-            <div>
-              {" "}
+            <div className="min-w-0">
               <Link
                 href="/leads"
-                className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-black text-white backdrop-blur transition hover:bg-white/20"
+                className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-black text-white backdrop-blur transition hover:bg-white/20 sm:text-sm"
               >
-                {" "}
-                <ArrowLeft size={17} /> Back to Leads{" "}
-              </Link>{" "}
-              <p className="text-sm font-bold uppercase tracking-[0.25em] text-white/70">
-                {" "}
-                Lead Detail{" "}
-              </p>{" "}
-              <h1 className="mt-2 text-3xl font-black sm:text-4xl">
-                {" "}
-                {lead?.clientName}{" "}
-              </h1>{" "}
+                <ArrowLeft size={17} />
+                Back to Leads
+              </Link>
+
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-white/70 sm:text-sm sm:tracking-[0.25em]">
+                Lead Detail
+              </p>
+
+              <h1 className="mt-2 wrap-break-word text-2xl font-black leading-tight sm:text-4xl">
+                {getLeadName(lead)}
+              </h1>
+
               <p className="mt-3 max-w-2xl text-sm leading-7 text-white/75">
-                {" "}
-                {lead?.service || "No service added"} enquiry from{" "}
-                {lead?.source || "Unknown source"}.{" "}
-              </p>{" "}
+                {getLeadService(lead)} enquiry from {getLeadSource(lead)}.
+              </p>
+
               <div className="mt-5 flex flex-wrap gap-2">
-                {" "}
                 <span
-                  className={`rounded-full px-4 py-2 text-xs font-black ${getStatusClass(lead?.status)}`}
+                  className={`rounded-full px-3 py-2 text-[11px] font-black sm:px-4 sm:text-xs ${getStatusClass(
+                    lead?.status,
+                  )}`}
                 >
-                  {" "}
-                  {lead?.status || "New"}{" "}
-                </span>{" "}
+                  {lead?.status || "New"}
+                </span>
+
                 <span
-                  className={`rounded-full px-4 py-2 text-xs font-black ${getPriorityClass(lead?.priority)}`}
+                  className={`rounded-full px-3 py-2 text-[11px] font-black sm:px-4 sm:text-xs ${getPriorityClass(
+                    lead?.priority,
+                  )}`}
                 >
-                  {" "}
-                  {lead?.priority || "Warm"} Priority{" "}
-                </span>{" "}
-                <span className="rounded-full bg-white/15 px-4 py-2 text-xs font-black text-white">
-                  {" "}
-                  Created {formatDate(lead?.createdAt)}{" "}
-                </span>{" "}
-              </div>{" "}
-            </div>{" "}
-            <div className="flex flex-wrap gap-3">
-              {" "}
+                  {lead?.priority || "Warm"} Priority
+                </span>
+
+                <span className="rounded-full bg-white/15 px-3 py-2 text-[11px] font-black text-white sm:px-4 sm:text-xs">
+                  Created {formatDate(lead?.createdAt)}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap xl:justify-end">
               {lead?.phone && (
-                <a
-                  href={`tel:${lead.phone}`}
-                  className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-black text-primary transition hover:bg-primary-light"
-                >
-                  {" "}
-                  <Phone size={18} /> Call{" "}
-                </a>
-              )}{" "}
+                <ActionButton href={`tel:${lead.phone}`} icon={Phone}>
+                  Call
+                </ActionButton>
+              )}
+
               {lead?.phone && (
-                <a
+                <ActionButton
                   href={whatsappLink}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-3 text-sm font-black text-white backdrop-blur transition hover:bg-white/20"
+                  icon={MessageCircle}
+                  variant="glass"
                 >
-                  {" "}
-                  <MessageCircle size={18} /> WhatsApp{" "}
-                </a>
-              )}{" "}
+                  WhatsApp
+                </ActionButton>
+              )}
+
               {lead?.email && (
-                <a
+                <ActionButton
                   href={`mailto:${lead.email}`}
-                  className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-3 text-sm font-black text-white backdrop-blur transition hover:bg-white/20"
+                  icon={Mail}
+                  variant="glass"
                 >
-                  {" "}
-                  <Mail size={18} /> Email{" "}
-                </a>
-              )}{" "}
-            </div>{" "}
-          </div>{" "}
-        </section>{" "}
+                  Email
+                </ActionButton>
+              )}
+            </div>
+          </div>
+        </section>
+
         {error && (
           <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
-            {" "}
-            {error}{" "}
+            {error}
           </div>
-        )}{" "}
+        )}
+
         {success && (
           <div className="rounded-2xl border border-green-100 bg-green-50 px-4 py-3 text-sm font-bold text-green-700">
-            {" "}
-            {success}{" "}
+            {success}
           </div>
-        )}{" "}
-        <section className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
-          {" "}
-          <div className="space-y-6">
-            {" "}
-            <div className="theme-card p-5 sm:p-6">
-              {" "}
-              <div className="mb-5 flex items-center justify-between">
-                {" "}
+        )}
+
+        <section className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr] xl:gap-6">
+          <div className="space-y-5 sm:space-y-6">
+            <div className="theme-card p-4 sm:p-6">
+              <div className="mb-5 flex items-center justify-between gap-4">
                 <div>
-                  {" "}
-                  <h2 className="text-xl font-black">Lead Information</h2>{" "}
-                  <p className="mt-1 text-sm text-muted">
-                    {" "}
-                    Client contact and enquiry details{" "}
-                  </p>{" "}
-                </div>{" "}
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-light text-primary">
-                  {" "}
-                  <User size={22} />{" "}
-                </div>{" "}
-              </div>{" "}
-              <div className="grid gap-4 md:grid-cols-2">
-                {" "}
+                  <h2 className="text-lg font-black sm:text-xl">
+                    Lead Information
+                  </h2>
+
+                  <p className="mt-1 text-xs text-muted sm:text-sm">
+                    Client contact and enquiry details
+                  </p>
+                </div>
+
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-light text-primary">
+                  <User size={22} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-2">
                 <DetailItem
                   icon={User}
                   label="Client Name"
-                  value={lead?.clientName}
-                />{" "}
-                <DetailItem icon={Phone} label="Phone" value={lead?.phone} />{" "}
-                <DetailItem icon={Mail} label="Email" value={lead?.email} />{" "}
+                  value={getLeadName(lead)}
+                />
+
+                <DetailItem icon={Phone} label="Phone" value={lead?.phone} />
+
+                <DetailItem icon={Mail} label="Email" value={lead?.email} />
+
                 <DetailItem
                   icon={Building2}
                   label="Company"
-                  value={lead?.company}
-                />{" "}
+                  value={getLeadCompany(lead)}
+                />
+
                 <DetailItem
                   icon={Sparkles}
                   label="Service"
-                  value={lead?.service}
-                />{" "}
+                  value={getLeadService(lead)}
+                />
+
                 <DetailItem
                   icon={FileText}
                   label="Budget"
                   value={lead?.budget}
-                />{" "}
-                <DetailItem icon={Send} label="Source" value={lead?.source} />{" "}
+                />
+
+                <DetailItem
+                  icon={Send}
+                  label="Source"
+                  value={getLeadSource(lead)}
+                />
+
                 <DetailItem
                   icon={CalendarClock}
                   label="Follow-up"
                   value={formatDate(lead?.followUpDate)}
-                />{" "}
-              </div>{" "}
+                />
+              </div>
+
               {lead?.message && (
-                <div className="mt-4 rounded-2xl border border-border bg-surface-alt p-4">
-                  {" "}
+                <div className="mt-4 rounded-3xl border border-border bg-surface-alt p-4">
                   <p className="text-xs font-black uppercase tracking-wider text-muted">
-                    {" "}
-                    Message{" "}
-                  </p>{" "}
+                    Message
+                  </p>
+
                   <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-foreground">
-                    {" "}
-                    {lead.message}{" "}
-                  </p>{" "}
+                    {lead.message}
+                  </p>
                 </div>
-              )}{" "}
-            </div>{" "}
-            {(lead?.source === "Meta Ads" ||
+              )}
+            </div>
+
+            {(getLeadSource(lead) === "Meta Ads" ||
               lead?.metaLeadId ||
               lead?.campaignName ||
               lead?.adName ||
               lead?.formName) && (
-              <div className="theme-card p-5 sm:p-6">
-                {" "}
+              <div className="theme-card p-4 sm:p-6">
                 <div className="mb-5">
-                  {" "}
-                  <h2 className="text-xl font-black">Meta Ads Details</h2>{" "}
-                  <p className="mt-1 text-sm text-muted">
-                    {" "}
-                    Campaign and form tracking details{" "}
-                  </p>{" "}
-                </div>{" "}
-                <div className="grid gap-4 md:grid-cols-2">
-                  {" "}
+                  <h2 className="text-lg font-black sm:text-xl">
+                    Meta Ads Details
+                  </h2>
+
+                  <p className="mt-1 text-xs text-muted sm:text-sm">
+                    Campaign and form tracking details
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-2">
                   <DetailItem
                     icon={FileText}
                     label="Meta Lead ID"
                     value={lead?.metaLeadId}
-                  />{" "}
+                  />
+
                   <DetailItem
                     icon={Sparkles}
                     label="Campaign"
                     value={lead?.campaignName}
-                  />{" "}
+                  />
+
                   <DetailItem
                     icon={Send}
                     label="Ad Name"
                     value={lead?.adName}
-                  />{" "}
+                  />
+
                   <DetailItem
                     icon={FileText}
                     label="Form Name"
                     value={lead?.formName}
-                  />{" "}
-                </div>{" "}
+                  />
+                </div>
               </div>
-            )}{" "}
-            <div className="theme-card p-5 sm:p-6">
-              {" "}
-              <div className="mb-5 flex items-center justify-between">
-                {" "}
+            )}
+
+            <div className="theme-card p-4 sm:p-6">
+              <div className="mb-5 flex items-center justify-between gap-4">
                 <div>
-                  {" "}
-                  <h2 className="text-xl font-black">Notes Timeline</h2>{" "}
-                  <p className="mt-1 text-sm text-muted">
-                    {" "}
-                    Follow-up notes and client updates{" "}
-                  </p>{" "}
-                </div>{" "}
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-light text-primary">
-                  {" "}
-                  <Clock size={22} />{" "}
-                </div>{" "}
-              </div>{" "}
+                  <h2 className="text-lg font-black sm:text-xl">
+                    Notes Timeline
+                  </h2>
+
+                  <p className="mt-1 text-xs text-muted sm:text-sm">
+                    Follow-up notes and client updates
+                  </p>
+                </div>
+
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-light text-primary">
+                  <Clock size={22} />
+                </div>
+              </div>
+
               <form onSubmit={handleAddNote} className="mb-6">
-                {" "}
                 <textarea
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   className="theme-input min-h-28 resize-none"
                   placeholder="Add call update, client requirement, next step..."
-                />{" "}
+                />
+
                 <div className="mt-3 flex justify-end">
-                  {" "}
                   <button
                     disabled={noteSaving}
-                    className="theme-btn disabled:cursor-not-allowed disabled:opacity-60"
+                    className="theme-btn w-full disabled:cursor-not-allowed disabled:opacity-60 sm:w-fit"
                   >
-                    {" "}
                     {noteSaving ? (
                       <>
-                        {" "}
-                        <Loader2 size={18} className="animate-spin" />{" "}
-                        Adding...{" "}
+                        <Loader2 size={18} className="animate-spin" />
+                        Adding...
                       </>
                     ) : (
                       <>
-                        {" "}
-                        <Plus size={18} /> Add Note{" "}
+                        <Plus size={18} />
+                        Add Note
                       </>
-                    )}{" "}
-                  </button>{" "}
-                </div>{" "}
-              </form>{" "}
+                    )}
+                  </button>
+                </div>
+              </form>
+
               {(lead?.notes || []).length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-border bg-surface-alt p-8 text-center">
-                  {" "}
+                <div className="rounded-3xl border border-dashed border-border bg-surface-alt p-6 text-center sm:p-8">
                   <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-light text-primary">
-                    {" "}
-                    <FileText size={24} />{" "}
-                  </div>{" "}
-                  <h3 className="mt-4 text-lg font-black">No notes yet</h3>{" "}
+                    <FileText size={24} />
+                  </div>
+
+                  <h3 className="mt-4 text-lg font-black">No notes yet</h3>
+
                   <p className="mt-2 text-sm text-muted">
-                    {" "}
-                    Add the first note after calling or contacting the
-                    client.{" "}
-                  </p>{" "}
+                    Add the first note after calling or contacting the client.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {" "}
                   {[...(lead?.notes || [])].reverse().map((item, index) => (
                     <div
                       key={item?._id || index}
-                      className="relative rounded-2xl border border-border bg-surface-alt p-4"
+                      className="rounded-3xl border border-border bg-surface-alt p-4"
                     >
-                      {" "}
                       <div className="flex gap-3">
-                        {" "}
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-primary">
-                          {" "}
-                          <FileText size={18} />{" "}
-                        </div>{" "}
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-primary">
+                          <FileText size={18} />
+                        </div>
+
                         <div className="min-w-0 flex-1">
-                          {" "}
                           <p className="whitespace-pre-wrap text-sm font-semibold leading-7 text-foreground">
-                            {" "}
-                            {item?.text}{" "}
-                          </p>{" "}
+                            {item?.text}
+                          </p>
+
                           <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-muted">
-                            {" "}
                             <span>
-                              {" "}
                               Added by{" "}
                               {item?.addedBy?.name ||
                                 item?.addedBy?.email ||
-                                "Team Member"}{" "}
-                            </span>{" "}
-                            <span>•</span>{" "}
-                            <span>{formatDateTime(item?.createdAt)}</span>{" "}
-                          </div>{" "}
-                        </div>{" "}
-                      </div>{" "}
+                                "Team Member"}
+                            </span>
+
+                            <span>•</span>
+
+                            <span>{formatDateTime(item?.createdAt)}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  ))}{" "}
+                  ))}
                 </div>
-              )}{" "}
-            </div>{" "}
-          </div>{" "}
-          <aside className="space-y-6">
-            {" "}
-            <div className="theme-card p-5 sm:p-6">
-              {" "}
+              )}
+            </div>
+          </div>
+
+          <aside className="space-y-5 sm:space-y-6 xl:sticky xl:top-24 xl:self-start">
+            <div className="theme-card p-4 sm:p-6">
               <div className="mb-5">
-                {" "}
-                <h2 className="text-xl font-black">Update Lead</h2>{" "}
-                <p className="mt-1 text-sm text-muted">
-                  {" "}
-                  Change status, priority and follow-up date{" "}
-                </p>{" "}
-              </div>{" "}
+                <h2 className="text-lg font-black sm:text-xl">Update Lead</h2>
+
+                <p className="mt-1 text-xs text-muted sm:text-sm">
+                  Change status, priority and follow-up date
+                </p>
+              </div>
+
               <div className="space-y-4">
-                {" "}
                 <div>
-                  {" "}
                   <label className="mb-2 block text-sm font-black">
-                    {" "}
-                    Status{" "}
-                  </label>{" "}
+                    Status
+                  </label>
+
                   <select
                     value={form.status}
                     onChange={(e) => updateField("status", e.target.value)}
                     className="theme-input"
                   >
-                    {" "}
                     {statusOptions.map((item) => (
                       <option key={item}>{item}</option>
-                    ))}{" "}
-                  </select>{" "}
-                </div>{" "}
+                    ))}
+                  </select>
+                </div>
+
                 <div>
-                  {" "}
                   <label className="mb-2 block text-sm font-black">
-                    {" "}
-                    Priority{" "}
-                  </label>{" "}
+                    Priority
+                  </label>
+
                   <select
                     value={form.priority}
                     onChange={(e) => updateField("priority", e.target.value)}
                     className="theme-input"
                   >
-                    {" "}
                     {priorityOptions.map((item) => (
                       <option key={item}>{item}</option>
-                    ))}{" "}
-                  </select>{" "}
-                </div>{" "}
+                    ))}
+                  </select>
+                </div>
+
                 <div>
-                  {" "}
                   <label className="mb-2 block text-sm font-black">
-                    {" "}
-                    Follow-up Date{" "}
-                  </label>{" "}
+                    Follow-up Date
+                  </label>
+
                   <input
                     type="date"
                     value={form.followUpDate}
@@ -669,85 +778,78 @@ export default function LeadDetailPage() {
                       updateField("followUpDate", e.target.value)
                     }
                     className="theme-input"
-                  />{" "}
-                </div>{" "}
+                  />
+                </div>
+
                 <button
                   onClick={handleSave}
                   disabled={saving}
                   className="theme-btn w-full disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {" "}
                   {saving ? (
                     <>
-                      {" "}
-                      <Loader2 size={18} className="animate-spin" />{" "}
-                      Saving...{" "}
+                      <Loader2 size={18} className="animate-spin" />
+                      Saving...
                     </>
                   ) : (
                     <>
-                      {" "}
-                      <Save size={18} /> Save Changes{" "}
+                      <Save size={18} />
+                      Save Changes
                     </>
-                  )}{" "}
-                </button>{" "}
-              </div>{" "}
-            </div>{" "}
-            <div className="theme-card p-5 sm:p-6">
-              {" "}
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="theme-card p-4 sm:p-6">
               <div className="mb-5">
-                {" "}
-                <h2 className="text-xl font-black">Quick Actions</h2>{" "}
-                <p className="mt-1 text-sm text-muted">
-                  {" "}
-                  Move this lead to next business stage{" "}
-                </p>{" "}
-              </div>{" "}
+                <h2 className="text-lg font-black sm:text-xl">Quick Actions</h2>
+
+                <p className="mt-1 text-xs text-muted sm:text-sm">
+                  Move this lead to next business stage
+                </p>
+              </div>
+
               <div className="space-y-3">
-                {" "}
                 <button
                   onClick={handleConvertToClient}
                   disabled={converting}
                   className="theme-btn w-full disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {" "}
                   {converting ? (
                     <>
-                      {" "}
-                      <Loader2 size={18} className="animate-spin" />{" "}
-                      Converting...{" "}
+                      <Loader2 size={18} className="animate-spin" />
+                      Converting...
                     </>
                   ) : (
                     <>
-                      {" "}
-                      <>
-                        <CheckCircle2 size={18} /> Convert To Client
-                      </>
+                      <CheckCircle2 size={18} />
+                      Convert To Client
                     </>
-                  )}{" "}
-                </button>{" "}
+                  )}
+                </button>
+
                 <button
                   onClick={fetchLead}
                   className="theme-btn-outline w-full"
                 >
-                  {" "}
-                  <RefreshCcw size={18} /> Refresh Lead{" "}
-                </button>{" "}
-              </div>{" "}
-            </div>{" "}
-            <div className="rounded-[2rem] border border-border bg-primary-light p-5">
-              {" "}
-              <p className="text-sm font-black text-primary">
-                Lead Reminder
-              </p>{" "}
+                  <RefreshCcw size={18} />
+                  Refresh Lead
+                </button>
+              </div>
+            </div>
+
+            <div className="rounded-4xl border border-border bg-primary-light p-5">
+              <p className="text-sm font-black text-primary">Lead Reminder</p>
+
               <p className="mt-2 text-sm leading-7 text-muted">
-                {" "}
                 Always add notes after every call or WhatsApp conversation. This
-                keeps the full sales history clean and trackable.{" "}
-              </p>{" "}
-            </div>{" "}
-          </aside>{" "}
-        </section>{" "}
-      </div>{" "}
+                keeps the full sales history clean and trackable.
+              </p>
+            </div>
+          </aside>
+        </section>
+      </div>
     </DashboardLayout>
   );
 }
