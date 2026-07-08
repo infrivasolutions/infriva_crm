@@ -19,6 +19,7 @@ import {
   Save,
   Send,
   Sparkles,
+  Trash2,
   User,
   UserCog,
 } from "lucide-react";
@@ -196,6 +197,7 @@ export default function LeadDetailPage() {
   const [saving, setSaving] = useState(false);
   const [noteSaving, setNoteSaving] = useState(false);
   const [converting, setConverting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [members, setMembers] = useState([]);
@@ -386,6 +388,31 @@ export default function LeadDetailPage() {
       setError(err?.message || "Failed to convert lead to client");
     } finally {
       setConverting(false);
+    }
+  };
+
+  const handleDeleteLead = async () => {
+    try {
+      const confirmDelete = window.confirm(
+        "Are you sure you want to delete this lead? This action cannot be undone.",
+      );
+
+      if (!confirmDelete) return;
+
+      setDeleting(true);
+      setError("");
+      setSuccess("");
+
+      await apiFetch(`/leads/${leadId}`, {
+        method: "DELETE",
+      });
+
+      router.push("/leads");
+    } catch (err) {
+      console.error(err);
+      setError(err?.message || "Failed to delete lead");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -920,6 +947,27 @@ export default function LeadDetailPage() {
                   <RefreshCcw size={18} />
                   Refresh Lead
                 </button>
+
+                {canManageLead && (
+                  <button
+                    type="button"
+                    onClick={handleDeleteLead}
+                    disabled={deleting}
+                    className="flex w-full items-center justify-center gap-2 rounded-full border border-red-200 bg-red-50 px-5 py-3 text-sm font-black text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {deleting ? (
+                      <>
+                        <Loader2 size={18} className="animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 size={18} />
+                        Delete Lead
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
 
