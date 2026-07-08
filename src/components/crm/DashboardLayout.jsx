@@ -217,7 +217,7 @@ export default function DashboardLayout({ children }) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-[280px] max-w-[85vw] border-r border-border bg-white/95 backdrop-blur-2xl transition-transform duration-300 lg:w-[280px] lg:max-w-none lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-70 max-w-[85vw] border-r border-border bg-white/95 backdrop-blur-2xl transition-transform duration-300 lg:w-70 lg:max-w-none lg:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -312,7 +312,7 @@ export default function DashboardLayout({ children }) {
       </aside>
 
       {/* Main Content */}
-      <main className="min-w-0 lg:pl-[280px]">
+      <main className="min-w-0 lg:pl-70">
         {/* Desktop Header */}
         <header className="sticky top-0 z-30 hidden h-20 border-b border-border bg-white/70 px-6 backdrop-blur-xl lg:flex lg:items-center lg:justify-between xl:px-8">
           <div className="min-w-0">
@@ -339,7 +339,7 @@ export default function DashboardLayout({ children }) {
                 value={globalSearch}
                 onChange={(e) => setGlobalSearch(e.target.value)}
                 placeholder="Search leads, clients, projects..."
-                className="h-12 w-[340px] rounded-full border border-border bg-white pl-11 pr-4 text-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-purple-100"
+                className="h-12 w-85 rounded-full border border-border bg-white pl-11 pr-4 text-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-purple-100"
               />
             </form>
 

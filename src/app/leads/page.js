@@ -2,6 +2,7 @@
 
 import DashboardLayout from "@/components/crm/DashboardLayout";
 import RoleGuard from "@/components/crm/RoleGuard";
+import ImportLeadsExcel from "@/components/leads/ImportLeadsExcel";
 import { apiFetch } from "@/lib/api";
 import {
   AlertCircle,
@@ -364,6 +365,8 @@ export default function LeadsPage() {
               <SummaryCard key={card.title} {...card} />
             ))}
           </section>
+
+          {canManageLeads && <ImportLeadsExcel onImported={fetchLeads} />}
 
           <section className="theme-card p-4 sm:p-5">
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
