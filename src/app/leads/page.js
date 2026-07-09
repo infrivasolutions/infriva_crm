@@ -3,12 +3,13 @@
 import DashboardLayout from "@/components/crm/DashboardLayout";
 import RoleGuard from "@/components/crm/RoleGuard";
 import ImportLeadsExcel from "@/components/leads/ImportLeadsExcel";
-import { apiFetch } from "@/lib/api";
+import { API_URL, apiFetch, getToken } from "@/lib/api";
 import {
   AlertCircle,
   ArrowRight,
   CalendarClock,
   CheckCircle2,
+  Download,
   Flame,
   Loader2,
   Mail,
@@ -325,6 +326,39 @@ export default function LeadsPage() {
     ];
   }, [leads, filteredLeads]);
 
+  const handleDownloadLeads = async () => {
+    try {
+      const token = getToken();
+
+      const res = await fetch(`${API_URL}/leads/export`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to download leads");
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `infriva-leads-${Date.now()}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error(error);
+      alert("Unable to download leads sheet");
+    }
+  };
+
   return (
     <RoleGuard allowedRoles={["admin", "ads-manager", "developer"]}>
       <DashboardLayout>
@@ -348,15 +382,25 @@ export default function LeadsPage() {
                   referrals and manual business leads.
                 </p>
               </div>
-              {canManageLeads && (
-                <Link
-                  href="/leads/new"
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-primary transition hover:bg-primary-light sm:w-fit sm:rounded-full"
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <button
+                  onClick={handleDownloadLeads}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white/15 px-5 py-3 text-sm font-black text-white ring-1 ring-white/25 transition hover:bg-white/25 sm:w-fit sm:rounded-full"
                 >
-                  <Plus size={18} />
-                  Add Lead
-                </Link>
-              )}
+                  <Download size={18} />
+                  Download Sheet
+                </button>
+
+                {canManageLeads && (
+                  <Link
+                    href="/leads/new"
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-primary transition hover:bg-primary-light sm:w-fit sm:rounded-full"
+                  >
+                    <Plus size={18} />
+                    Add Lead
+                  </Link>
+                )}
+              </div>
             </div>
           </section>
 
