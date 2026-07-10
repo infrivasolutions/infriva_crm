@@ -174,7 +174,7 @@ export default function NewLeadPage() {
         assignedTo: form.assignedTo || null,
       };
 
-      const res = await apiFetch("/leads", {
+      const res = await apiFetch("/leads/add", {
         method: "POST",
         body: JSON.stringify(payload),
       });
