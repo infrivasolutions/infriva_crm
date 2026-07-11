@@ -13,15 +13,17 @@ import {
   Flame,
   Loader2,
   Mail,
+  Megaphone,
   Phone,
   Plus,
+  RefreshCw,
   Search,
   SlidersHorizontal,
   User,
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 const statuses = [
   "All",
@@ -65,6 +67,11 @@ const getLeadStatus = (lead) => lead?.status || "New";
 
 const getLeadPriority = (lead) => lead?.priority || "Warm";
 
+const normalizeSearchText = (value) =>
+  String(value ?? "")
+    .trim()
+    .toLowerCase();
+
 const getStatusClass = (status = "") => {
   const value = status.toLowerCase();
 
@@ -88,8 +95,14 @@ const getStatusClass = (status = "") => {
 };
 
 const getPriorityClass = (priority = "") => {
-  if (priority === "Hot") return "bg-red-50 text-red-700";
-  if (priority === "Cold") return "bg-blue-50 text-blue-700";
+  if (priority === "Hot") {
+    return "bg-red-50 text-red-700";
+  }
+
+  if (priority === "Cold") {
+    return "bg-blue-50 text-blue-700";
+  }
+
   return "bg-amber-50 text-amber-700";
 };
 
@@ -101,6 +114,7 @@ function SummaryCard({ title, value, icon: Icon, desc }) {
           <p className="truncate text-[11px] font-black uppercase tracking-wider text-muted sm:text-xs">
             {title}
           </p>
+
           <h3 className="mt-2 text-2xl font-black text-foreground sm:text-3xl">
             {value}
           </h3>
@@ -120,16 +134,35 @@ function SummaryCard({ title, value, icon: Icon, desc }) {
 
 function LeadCard({ lead }) {
   const leadId = lead?._id || lead?.id;
+  const isMetaLead = getLeadSource(lead) === "Meta Ads";
 
   return (
     <Link
       href={`/leads/${leadId}`}
-      className="group block overflow-hidden rounded-3xl border border-border bg-white shadow-sm transition hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl hover:shadow-purple-100"
+      className={`group block overflow-hidden rounded-3xl border bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl ${
+        isMetaLead
+          ? "border-blue-200 ring-1 ring-blue-100 hover:border-blue-300 hover:shadow-blue-100"
+          : "border-border hover:border-primary/30 hover:shadow-purple-100"
+      }`}
     >
-      <div className="relative bg-primary-light p-3 sm:p-4">
+      <div
+        className={`relative p-3 sm:p-4 ${
+          isMetaLead ? "bg-blue-50" : "bg-primary-light"
+        }`}
+      >
         <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-primary/10 blur-xl" />
 
-        <div className="relative flex items-start justify-between gap-2">
+        {isMetaLead && (
+          <span className="absolute right-3 top-3 z-10 rounded-full bg-blue-600 px-2.5 py-1 text-[9px] font-black text-white shadow-sm sm:text-[10px]">
+            Meta Ads
+          </span>
+        )}
+
+        <div
+          className={`relative flex items-start justify-between gap-2 ${
+            isMetaLead ? "pr-20" : ""
+          }`}
+        >
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white text-primary sm:h-11 sm:w-11">
               <User size={18} />
@@ -139,6 +172,7 @@ function LeadCard({ lead }) {
               <h3 className="truncate text-xs font-black text-foreground sm:text-base">
                 {getLeadName(lead)}
               </h3>
+
               <p className="mt-1 truncate text-[10px] font-bold text-primary sm:text-xs">
                 {getLeadSource(lead)}
               </p>
@@ -177,6 +211,7 @@ function LeadCard({ lead }) {
             <p className="text-[9px] font-black uppercase tracking-wider text-muted sm:text-[10px]">
               Service
             </p>
+
             <p className="mt-1 truncate text-[11px] font-black text-foreground sm:text-sm">
               {getLeadService(lead)}
             </p>
@@ -187,6 +222,7 @@ function LeadCard({ lead }) {
               <p className="text-[9px] font-black uppercase tracking-wider text-muted sm:text-[10px]">
                 Company
               </p>
+
               <p className="mt-1 truncate text-[11px] font-bold text-foreground sm:text-sm">
                 {getLeadCompany(lead)}
               </p>
@@ -198,6 +234,7 @@ function LeadCard({ lead }) {
           {lead?.phone && (
             <p className="flex min-w-0 items-center gap-1.5 text-[10px] font-bold text-muted sm:gap-2 sm:text-xs">
               <Phone size={13} className="shrink-0 text-primary" />
+
               <span className="truncate">{lead.phone}</span>
             </p>
           )}
@@ -205,6 +242,7 @@ function LeadCard({ lead }) {
           {lead?.email && (
             <p className="hidden min-w-0 items-center gap-2 text-xs font-bold text-muted sm:flex">
               <Mail size={13} className="shrink-0 text-primary" />
+
               <span className="truncate">{lead.email}</span>
             </p>
           )}
@@ -212,6 +250,7 @@ function LeadCard({ lead }) {
           {lead?.assignedTo?.name && (
             <p className="flex min-w-0 items-center gap-1.5 text-[10px] font-bold text-muted sm:gap-2 sm:text-xs">
               <Users size={13} className="shrink-0 text-primary" />
+
               <span className="truncate">Assigned: {lead.assignedTo.name}</span>
             </p>
           )}
@@ -219,6 +258,7 @@ function LeadCard({ lead }) {
           {lead?.followUpDate && (
             <p className="flex min-w-0 items-center gap-1.5 text-[10px] font-bold text-muted sm:gap-2 sm:text-xs">
               <CalendarClock size={13} className="shrink-0 text-primary" />
+
               <span className="truncate">
                 {new Date(lead.followUpDate).toLocaleDateString("en-IN")}
               </span>
@@ -226,8 +266,19 @@ function LeadCard({ lead }) {
           )}
         </div>
 
+        {lead?.createdAt && (
+          <p className="mt-3 text-[10px] font-semibold text-muted sm:text-xs">
+            Received{" "}
+            {new Date(lead.createdAt).toLocaleString("en-IN", {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })}
+          </p>
+        )}
+
         <div className="mt-4 flex items-center justify-between text-[10px] font-black text-primary sm:text-xs">
           <span>View Details</span>
+
           <ArrowRight
             size={15}
             className="transition group-hover:translate-x-1"
@@ -241,6 +292,8 @@ function LeadCard({ lead }) {
 export default function LeadsPage() {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
   const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
@@ -249,44 +302,98 @@ export default function LeadsPage() {
   const [priority, setPriority] = useState("All");
   const [currentUser, setCurrentUser] = useState(null);
 
-  const fetchLeads = async () => {
-    try {
-      setLoading(true);
-      setError("");
+  const fetchLeads = useCallback(
+    async ({ showLoader = false, silent = false } = {}) => {
+      try {
+        if (showLoader) {
+          setLoading(true);
+        } else {
+          setIsRefreshing(true);
+        }
 
-      const res = await apiFetch("/leads");
-      setLeads(res?.leads || res?.data || []);
-    } catch (err) {
-      console.error(err);
-      setError(err?.message || "Failed to fetch leads");
-    } finally {
-      setLoading(false);
-    }
-  };
+        if (!silent) {
+          setError("");
+        }
+
+        const res = await apiFetch("/leads", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        const fetchedLeads = Array.isArray(res?.leads)
+          ? res.leads
+          : Array.isArray(res?.data)
+            ? res.data
+            : [];
+
+        const sortedLeads = [...fetchedLeads].sort(
+          (a, b) =>
+            new Date(b?.createdAt || 0).getTime() -
+            new Date(a?.createdAt || 0).getTime(),
+        );
+
+        setLeads(sortedLeads);
+        setLastUpdated(new Date());
+      } catch (err) {
+        console.error("Failed to fetch leads:", err);
+
+        if (!silent) {
+          setError(err?.message || "Failed to fetch leads");
+        }
+      } finally {
+        if (showLoader) {
+          setLoading(false);
+        }
+
+        setIsRefreshing(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     const userData = localStorage.getItem("infriva_user");
-    const parsedUser = userData ? JSON.parse(userData) : null;
 
-    setCurrentUser(parsedUser);
-    fetchLeads();
-  }, []);
+    try {
+      const parsedUser = userData ? JSON.parse(userData) : null;
+
+      setCurrentUser(parsedUser);
+    } catch {
+      setCurrentUser(null);
+    }
+
+    fetchLeads({
+      showLoader: true,
+    });
+
+    const intervalId = window.setInterval(() => {
+      fetchLeads({
+        silent: true,
+      });
+    }, 15000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [fetchLeads]);
 
   const canManageLeads = ["admin", "ads-manager"].includes(currentUser?.role);
 
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
-      const searchValue = search.toLowerCase();
+      const searchValue = normalizeSearchText(search);
 
       const matchesSearch =
-        getLeadName(lead).toLowerCase().includes(searchValue) ||
-        lead?.phone?.toLowerCase().includes(searchValue) ||
-        lead?.email?.toLowerCase().includes(searchValue) ||
-        getLeadCompany(lead).toLowerCase().includes(searchValue) ||
-        getLeadService(lead).toLowerCase().includes(searchValue);
+        normalizeSearchText(getLeadName(lead)).includes(searchValue) ||
+        normalizeSearchText(lead?.phone).includes(searchValue) ||
+        normalizeSearchText(lead?.email).includes(searchValue) ||
+        normalizeSearchText(getLeadCompany(lead)).includes(searchValue) ||
+        normalizeSearchText(getLeadService(lead)).includes(searchValue);
 
       const matchesStatus = status === "All" || getLeadStatus(lead) === status;
+
       const matchesSource = source === "All" || getLeadSource(lead) === source;
+
       const matchesPriority =
         priority === "All" || getLeadPriority(lead) === priority;
 
@@ -295,7 +402,12 @@ export default function LeadsPage() {
   }, [leads, search, status, source, priority]);
 
   const summaryCards = useMemo(() => {
+    const metaLeads = leads.filter(
+      (lead) => getLeadSource(lead) === "Meta Ads",
+    );
+
     const hotLeads = leads.filter((lead) => getLeadPriority(lead) === "Hot");
+
     const wonLeads = leads.filter((lead) => getLeadStatus(lead) === "Won");
 
     return [
@@ -306,10 +418,10 @@ export default function LeadsPage() {
         icon: Users,
       },
       {
-        title: "Showing",
-        value: filteredLeads.length,
-        desc: "After filters",
-        icon: SlidersHorizontal,
+        title: "Meta Leads",
+        value: metaLeads.length,
+        desc: "Received from Meta Ads",
+        icon: Megaphone,
       },
       {
         title: "Hot Leads",
@@ -324,7 +436,7 @@ export default function LeadsPage() {
         icon: CheckCircle2,
       },
     ];
-  }, [leads, filteredLeads]);
+  }, [leads]);
 
   const handleDownloadLeads = async () => {
     try {
@@ -346,8 +458,10 @@ export default function LeadsPage() {
       const url = window.URL.createObjectURL(blob);
 
       const link = document.createElement("a");
+
       link.href = url;
       link.download = `infriva-leads-${Date.now()}.xlsx`;
+
       document.body.appendChild(link);
       link.click();
 
@@ -355,6 +469,7 @@ export default function LeadsPage() {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error(error);
+
       alert("Unable to download leads sheet");
     }
   };
@@ -365,6 +480,7 @@ export default function LeadsPage() {
         <div className="space-y-5 sm:space-y-6">
           <section className="relative overflow-hidden rounded-4xl bg-primary p-5 text-white shadow-2xl shadow-purple-200 sm:rounded-4xl sm:p-6 lg:p-8">
             <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+
             <div className="absolute -bottom-20 left-1/2 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
 
             <div className="relative z-10 flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
@@ -382,8 +498,24 @@ export default function LeadsPage() {
                   referrals and manual business leads.
                 </p>
               </div>
+
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <button
+                  type="button"
+                  onClick={() => fetchLeads()}
+                  disabled={isRefreshing}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white/15 px-5 py-3 text-sm font-black text-white ring-1 ring-white/25 transition hover:bg-white/25 disabled:cursor-not-allowed disabled:opacity-70 sm:w-fit sm:rounded-full"
+                >
+                  <RefreshCw
+                    size={18}
+                    className={isRefreshing ? "animate-spin" : ""}
+                  />
+
+                  {isRefreshing ? "Refreshing" : "Refresh"}
+                </button>
+
+                <button
+                  type="button"
                   onClick={handleDownloadLeads}
                   className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white/15 px-5 py-3 text-sm font-black text-white ring-1 ring-white/25 transition hover:bg-white/25 sm:w-fit sm:rounded-full"
                 >
@@ -410,7 +542,9 @@ export default function LeadsPage() {
             ))}
           </section>
 
-          {canManageLeads && <ImportLeadsExcel onImported={fetchLeads} />}
+          {canManageLeads && (
+            <ImportLeadsExcel onImported={() => fetchLeads()} />
+          )}
 
           <section className="theme-card p-4 sm:p-5">
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
@@ -459,9 +593,21 @@ export default function LeadsPage() {
               </select>
             </div>
 
-            <div className="mt-4 flex items-center gap-2 text-xs font-bold text-muted sm:text-sm">
-              <SlidersHorizontal size={16} />
-              Showing {filteredLeads.length} of {leads.length} leads
+            <div className="mt-4 flex flex-col gap-2 text-xs font-bold text-muted sm:flex-row sm:items-center sm:justify-between sm:text-sm">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal size={16} />
+                Showing {filteredLeads.length} of {leads.length} leads
+              </div>
+
+              <p className="text-[11px] font-semibold sm:text-xs">
+                Auto-refreshes every 15 seconds
+                {lastUpdated
+                  ? ` • Updated ${lastUpdated.toLocaleTimeString("en-IN", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}`
+                  : ""}
+              </p>
             </div>
           </section>
 
@@ -491,7 +637,15 @@ export default function LeadsPage() {
 
                 <p className="mt-2 text-sm text-muted">{error}</p>
 
-                <button onClick={fetchLeads} className="theme-btn mt-5">
+                <button
+                  type="button"
+                  onClick={() =>
+                    fetchLeads({
+                      showLoader: true,
+                    })
+                  }
+                  className="theme-btn mt-5"
+                >
                   Try Again
                 </button>
               </div>
@@ -509,9 +663,11 @@ export default function LeadsPage() {
                   Add a new lead or change your filters.
                 </p>
 
-                <Link href="/leads/new" className="theme-btn mt-5">
-                  Add First Lead
-                </Link>
+                {canManageLeads && (
+                  <Link href="/leads/new" className="theme-btn mt-5">
+                    Add First Lead
+                  </Link>
+                )}
               </div>
             </div>
           ) : (
@@ -521,6 +677,7 @@ export default function LeadsPage() {
                   <h2 className="text-lg font-black text-foreground">
                     Lead Cards
                   </h2>
+
                   <p className="text-xs font-semibold text-muted sm:text-sm">
                     Mobile friendly card view
                   </p>
