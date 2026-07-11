@@ -285,6 +285,19 @@ export default function LeadDetailPage() {
   }, [leadId]);
   const canManageLead = ["admin", "ads-manager"].includes(currentUser?.role);
 
+  const convertedClientId =
+    lead?.convertedClient?._id ||
+    lead?.convertedClient ||
+    lead?.client?._id ||
+    lead?.client ||
+    lead?.clientId;
+
+  const isConvertedToClient =
+    Boolean(
+      lead?.isConverted || lead?.convertedToClient || convertedClientId,
+    ) ||
+    ["won", "converted"].includes(String(lead?.status || "").toLowerCase());
+
   const updateField = (name, value) => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
@@ -920,25 +933,32 @@ export default function LeadDetailPage() {
               </div>
 
               <div className="space-y-3">
-                {canManageLead && (
-                  <button
-                    onClick={handleConvertToClient}
-                    disabled={converting}
-                    className="theme-btn w-full disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {converting ? (
-                      <>
-                        <Loader2 size={18} className="animate-spin" />
-                        Converting...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 size={18} />
-                        Convert To Client
-                      </>
-                    )}
-                  </button>
-                )}
+                {canManageLead &&
+                  (isConvertedToClient ? (
+                    <div className="flex w-full items-center justify-center gap-2 rounded-full border border-green-200 bg-green-50 px-5 py-3 text-sm font-black text-green-700">
+                      <CheckCircle2 size={18} />
+                      Converted To Client
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleConvertToClient}
+                      disabled={converting}
+                      className="theme-btn w-full disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {converting ? (
+                        <>
+                          <Loader2 size={18} className="animate-spin" />
+                          Converting...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 size={18} />
+                          Convert To Client
+                        </>
+                      )}
+                    </button>
+                  ))}
 
                 <button
                   onClick={fetchLead}
